@@ -30,6 +30,7 @@ func TestExamples(t *testing.T) {
 		_ = os.RemoveAll("test-examples/")
 	})
 	var bash shell.Bash
+	defer bash.Close()
 	_, err := bash.Run("go install ./...")
 	require.NoError(t, err)
 

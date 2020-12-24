@@ -42,8 +42,8 @@ type Bash struct {
 
 // Close closses current bash process and all used resources
 func (b *Bash) Close() {
-	_, _ = b.stdin.Write([]byte("exit 0\n"))
 	b.cancel()
+	_, _ = b.stdin.Write([]byte("exit 0\n"))
 	_ = b.cmd.Wait()
 	for _, r := range b.resources {
 		_ = r.Close()
@@ -109,13 +109,16 @@ func (b *Bash) init() {
 				return
 			}
 			r := strings.TrimSpace(string(buffer[:n]))
-			if r == "OK" {
+			if strings.HasSuffix(r, "OK") {
+				if len(r) > 2 {
+					output = r[:len(r)-len("\nOK")]
+				}
 				b.outCh <- output
 				output = ""
 				continue
 			}
-			if r == "FAILED" {
-				b.errCh <- errors.New("command failed")
+			if strings.HasSuffix(r, "FAILED") {
+				b.errCh <- errors.New("command has failed")
 				continue
 			}
 			output = r
