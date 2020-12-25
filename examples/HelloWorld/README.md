@@ -1,6 +1,6 @@
 # Hello World Example
 
-This file will be converted by `go-testmark` into golang [testify suite](https://github.com/stretchr/testify#suite-package).
+This file will be converted by `gotestmd` into go [testify suite](https://github.com/stretchr/testify#suite-package).
 
 The file will include only one test because this example doesn't depend on others and others don't depend on this example.
 
