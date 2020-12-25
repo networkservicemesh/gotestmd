@@ -68,6 +68,7 @@ func (e *Example) IsLeaf() bool {
 // Dependencies returns unique dependecies for this example
 func (e *Example) Dependencies() []string {
 	var deps []string
+	var parentDeps []string
 
 	for _, child := range e.Childs {
 		if child.IsLeaf() {
@@ -78,11 +79,11 @@ func (e *Example) Dependencies() []string {
 
 	for _, dep := range e.Requires {
 		if _, ok := e.getParentDependencies()[dep]; !ok {
-			deps = append(deps, dep)
+			parentDeps = append(parentDeps, dep)
 		}
 	}
 
-	return deps
+	return append(parentDeps, deps...)
 }
 
 func (e *Example) normalize(root string) {
