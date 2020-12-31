@@ -25,8 +25,8 @@ const emptyTest = `func (s *Suite) Test() {}`
 
 const testTemplate = `
 func (s *Suite) Test{{ NAME }}() {
-	dir := filepath.Join(os.Getenv("GOPATH"), "src", "{{ DIR }}")
-    r := s.Runner(dir)    
+	dir := filepath.Join(os.Getenv("GOPATH"), "{{ DIR }}")
+	r := s.Runner(dir)
 	{{ CLEANUP }}
 	{{ RUN }}
 }

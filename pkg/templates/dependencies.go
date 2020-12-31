@@ -17,7 +17,7 @@
 package templates
 
 import (
-	"path/filepath"
+	"path"
 	"strings"
 )
 
@@ -31,7 +31,7 @@ func (d Dependency) Pkg() string {
 
 // Name returns pkg name
 func (d Dependency) Name() string {
-	_, name := filepath.Split(d.Pkg())
+	_, name := path.Split(d.Pkg())
 	return normalizeName(name)
 }
 

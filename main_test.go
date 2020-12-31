@@ -29,8 +29,12 @@ func TestExamples(t *testing.T) {
 	t.Cleanup(func() {
 		_ = os.RemoveAll("test-examples/")
 	})
+
 	var bash shell.Bash
+	bash.Env = append(bash.Env, os.Environ()...)
+	bash.Env = append(bash.Env, "GOPACKAGE=github.com/networkservicemesh/gotestmd")
 	defer bash.Close()
+
 	_, err := bash.Run("go install ./...")
 	require.NoError(t, err)
 
@@ -41,6 +45,8 @@ func TestExamples(t *testing.T) {
 package suites
 
 import (
+	"os"
+	"strings"
 	"testing"
 
 	"github.com/networkservicemesh/gotestmd/test-examples/helloworld"
@@ -51,6 +57,11 @@ import (
 )
 
 func TestEntryPoint(t *testing.T) {
+	wd, _ := os.Getwd()
+	if !strings.HasPrefix(wd, os.Getenv("GOPATH")) {
+		_ = os.Setenv("GOPATH", "")
+	}
+
 	suite.Run(t, new(helloworld.Suite))
 	suite.Run(t, new(tree.Suite))
 	suite.Run(t, new(consumer2.Suite))
@@ -60,6 +71,6 @@ EOF
 `)
 	require.NoError(t, err)
 
-	_, err = bash.Run("go test ./test-examples/... ")
+	_, err = bash.Run("go test ./test-examples/...")
 	require.NoError(t, err)
 }

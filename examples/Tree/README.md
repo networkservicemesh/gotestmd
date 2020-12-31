@@ -49,37 +49,39 @@ import (
 	"path/filepath"
 
 	"github.com/networkservicemesh/gotestmd/pkg/suites/shell"
+	"github.com/networkservicemesh/gotestmd/test-examples/tree/subtree"
+	"github.com/stretchr/testify/suite"
 )
 
 type Suite struct {
 	shell.Suite
+	subtreeSuite subtree.Suite
 }
 
 func (s *Suite) SetupSuite() {
-	s.Suite.SetupSuite()
+	suite.Run(s.T(), &s.subtreeSuite)
 
-	dir := filepath.Join(os.Getenv("GOPATH"), "src", "/github.com/networkservicemesh/gotestmd/examples/Tree")
+	dir := filepath.Join(os.Getenv("GOPATH"), "/github.com/networkservicemesh/gotestmd/examples/Tree")
 	r := s.Runner(dir)
+
 	s.T().Cleanup(func() {
 		r.Run(`rm -rf ${MY_TEST_DIR}`)
-
 	})
-	r.Run(`MY_TEST_DIR=resources 
-echo "mkdir ${MY_TEST_DIR}"`)
+
+	r.Run(`MY_TEST_DIR=resources ` + "\n" + `echo "mkdir ${MY_TEST_DIR}"`)
 }
 
 func (s *Suite) TestLeafA() {
-	dir := filepath.Join(os.Getenv("GOPATH"), "src", "/github.com/networkservicemesh/gotestmd/examples/Tree/LeafA")
+	dir := filepath.Join(os.Getenv("GOPATH"), "/github.com/networkservicemesh/gotestmd/examples/Tree/LeafA")
 	r := s.Runner(dir)
 
 	r.Run(`echo "I'm leaf A"`)
 }
 
 func (s *Suite) TestLeafC() {
-	dir := filepath.Join(os.Getenv("GOPATH"), "src", "/github.com/networkservicemesh/gotestmd/examples/Tree/LeafC")
+	dir := filepath.Join(os.Getenv("GOPATH"), "/github.com/networkservicemesh/gotestmd/examples/Tree/LeafC")
 	r := s.Runner(dir)
 
 	r.Run(`echo "I'm leaf C"`)
 }
-
 ```

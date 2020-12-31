@@ -65,7 +65,7 @@ func (e *Example) IsLeaf() bool {
 	return len(e.Childs) == 0 && len(e.Requires) == 0 && len(e.Parents) > 0
 }
 
-// Dependencies returns unique dependecies for this example
+// Dependencies returns unique dependencies for this example
 func (e *Example) Dependencies() []string {
 	var deps []string
 	var parentDeps []string

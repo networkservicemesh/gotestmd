@@ -30,28 +30,27 @@ import (
 	"path/filepath"
 
 	"github.com/networkservicemesh/gotestmd/pkg/suites/shell"
-	"github.com/networkservicemesh/gotestmd/test-examples/tree"
 )
 
 type Suite struct {
 	shell.Suite
-	treeSuite tree.Suite
 }
 
 func (s *Suite) SetupSuite() {
-	s.Suite.SetupSuite()
-	s.treeSuite.Suite = s.Suite
-	s.treeSuite.SetupSuite()
-	dir := filepath.Join(os.Getenv("GOPATH"), "src", "/github.com/networkservicemesh/gotestmd/examples/Tree/SubTree")
-    r := s.Runner(dir)
+	dir := filepath.Join(os.Getenv("GOPATH"), "/github.com/networkservicemesh/gotestmd/examples/Tree/SubTree")
+	r := s.Runner(dir)
+
+	s.T().Cleanup(func() {
+		r.Run(`echo "Sub tree is done"`)
+	})
 
 	r.Run(`echo "I'm sub tree"`)
 }
 
 func (s *Suite) TestLeafB() {
-	dir := filepath.Join(os.Getenv("GOPATH"), "src", "/github.com/networkservicemesh/gotestmd/examples/Tree/SubTree/LeafB")
+	dir := filepath.Join(os.Getenv("GOPATH"), "/Users/user/Projects/NSM/gotestmd/examples/Tree/SubTree/LeafB")
 	r := s.Runner(dir)
 
-    r.Run(`echo "I'm leaf B"`)
+	r.Run(`echo "I'm leaf B"`)
 }
 ```

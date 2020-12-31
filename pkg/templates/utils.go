@@ -34,16 +34,15 @@ func normalizeName(s string) string {
 	return strings.ToLower(nameRegex.ReplaceAllString(s, "_"))
 }
 
-func normalizeDeps(outputDir string, deps []string) Dependencies {
+func normalizeDeps(rootPackage string, deps []string) Dependencies {
 	var d Dependencies
 	for _, dep := range deps {
 		pieces := strings.Split(filepath.Clean(dep), string(filepath.Separator))
 		for i := 0; i < len(pieces); i++ {
 			pieces[i] = normalizeName(pieces[i])
 		}
-		dep = filepath.Join(pieces...)
-		gopathOffset := len(filepath.Join(os.Getenv("GOPATH"), "src")) + len(string(filepath.Separator))
-		d = append(d, Dependency(filepath.Join(outputDir, dep)[gopathOffset:]))
+		dep = path.Join(pieces...)
+		d = append(d, Dependency(path.Join(rootPackage, dep)))
 	}
 	return d
 }
@@ -55,7 +54,7 @@ func Generate(c config.Config, examples []*example.Example) []*SuiteTemplate {
 	var index = map[string]*SuiteTemplate{}
 
 	for _, e := range examples {
-		dir := filepath.Clean(e.Dir[len(filepath.Join(os.Getenv("GOPATH"), "src")):])
+		dir := filepath.Clean(strings.TrimPrefix(e.Dir, os.Getenv("GOPATH")))
 		if e.IsLeaf() {
 			_, name := path.Split(e.Name)
 			for _, parent := range e.Parents {
@@ -71,10 +70,10 @@ func Generate(c config.Config, examples []*example.Example) []*SuiteTemplate {
 		result = append(result, &SuiteTemplate{
 			Dir:        dir,
 			Location:   filepath.Join(c.OutputDir, strings.ToLower(e.Name), "suite.gen.go"),
-			Dependency: Dependency(filepath.Join(c.OutputDir, strings.ToLower(e.Name))),
+			Dependency: Dependency(path.Join(c.RootPackage, strings.ToLower(e.Name))),
 			Cleanup:    e.Cleanup,
 			Run:        e.Run,
-			Deps:       normalizeDeps(c.OutputDir, e.Dependencies()),
+			Deps:       normalizeDeps(c.RootPackage, e.Dependencies()),
 		})
 		index[e.Name] = result[len(result)-1]
 	}

@@ -39,10 +39,12 @@ type Suite struct {
 func (s *Suite) SetupSuite() {
 	suite.Run(s.T(), &s.producerSuite)
 	suite.Run(s.T(), &s.consumer1Suite)
-	dir := filepath.Join(os.Getenv("GOPATH"), "src", "/github.com/networkservicemesh/gotestmd/examples/Producer/Consumer3")
+
+	dir := filepath.Join(os.Getenv("GOPATH"), "/github.com/networkservicemesh/gotestmd/examples/Producer/Consumer3")
 	r := s.Runner(dir)
+
 	r.Run(`echo "I'm the third consumer"`)
 }
-func (s *Suite) Test() {}
 
+func (s *Suite) Test() {}
 ```

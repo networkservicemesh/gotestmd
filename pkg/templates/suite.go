@@ -39,8 +39,8 @@ type Suite struct {
 
 func (s *Suite) SetupSuite() {
 	{{ SETUP }}
-	dir := filepath.Join(os.Getenv("GOPATH"), "src", "{{ DIR }}")
-    r := s.Runner(dir)                                                                                                                                                                                                                                                                                                                                   
+	dir := filepath.Join(os.Getenv("GOPATH"), "{{ DIR }}")
+	r := s.Runner(dir)
 	{{ CLEANUP }}
 	{{ RUN }}
 }

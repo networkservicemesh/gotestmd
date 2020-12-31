@@ -29,11 +29,12 @@ type Suite struct {
 }
 
 func (s *Suite) SetupSuite() {
-	dir := filepath.Join(os.Getenv("GOPATH"), "src", "/github.com/networkservicemesh/gotestmd/examples/Producer/Consumer1")
+	dir := filepath.Join(os.Getenv("GOPATH"), "/github.com/networkservicemesh/gotestmd/examples/Producer/Consumer1")
 	r := s.Runner(dir)
+
 	r.Run(`echo "I'm the first consumer"`)
 }
-func (s *Suite) Test() {
-}
+
+func (s *Suite) Test() {}
 ```
 Note: the result has not producer setup/teardown logic because this Consumer is used by [Consumer3](../Consumer3) that contains required dependency.

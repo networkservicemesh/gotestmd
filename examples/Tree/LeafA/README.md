@@ -14,9 +14,9 @@ The generated result of this example is:
 
 ```go
 func (s *Suite) TestLeafA() {
-	dir := filepath.Join(os.Getenv("GOPATH"), "src", "/github.com/networkservicemesh/gotestmd/examples/Tree/LeafA")
-    r := s.Runner(dir)    
-	
+	dir := filepath.Join(os.Getenv("GOPATH"), "/github.com/networkservicemesh/gotestmd/examples/Tree/LeafA")
+	r := s.Runner(dir)
+
 	r.Run(`echo "I'm leaf A"`)
 }
 ```

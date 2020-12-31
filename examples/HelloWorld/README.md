@@ -28,10 +28,9 @@ type Suite struct {
 }
 
 func (s *Suite) SetupSuite() {
-	dir := filepath.Join(os.Getenv("GOPATH"), "src", "/github.com/networkservicemesh/gotestmd/examples/HelloWorld")
+	dir := filepath.Join(os.Getenv("GOPATH"), "/github.com/networkservicemesh/gotestmd/examples/HelloWorld")
 	r := s.Runner(dir)
 	r.Run(`echo "Hello world!"`)
 }
-func (s *Suite) Test() {
-}
+func (s *Suite) Test() {}
 ```
