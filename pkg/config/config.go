@@ -19,7 +19,6 @@ package config
 
 import (
 	"os"
-	"path"
 	"path/filepath"
 
 	"github.com/sirupsen/logrus"
@@ -34,8 +33,8 @@ type Config struct {
 
 // FromArgs returns Config from the os.Args
 func FromArgs() Config {
-	if len(os.Args) != 3 && len(os.Args) != 4 {
-		logrus.Fatal("ARGs have wrong length. Expected: input-dir output-dir [root-package]")
+	if len(os.Args) != 4 {
+		logrus.Fatal("ARGs have wrong length. Expected: input-dir output-dir root-package")
 	}
 
 	inputDir, _ := filepath.Abs(os.Args[1])
@@ -51,18 +50,9 @@ func FromArgs() Config {
 		}
 	}
 
-	var rootPackage string
-	if len(os.Args) == 4 {
-		rootPackage = os.Args[3]
-	} else {
-		wd, _ := os.Getwd()
-		relOutputDir, _ := filepath.Rel(wd, absOutputDir)
-		rootPackage = path.Join(os.Getenv("GOPACKAGE"), filepath.ToSlash(relOutputDir))
-	}
-
 	return Config{
 		InputDir:    inputDir,
 		OutputDir:   absOutputDir,
-		RootPackage: rootPackage,
+		RootPackage: os.Args[3],
 	}
 }

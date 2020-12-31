@@ -38,7 +38,7 @@ func TestExamples(t *testing.T) {
 	_, err := bash.Run("go install ./...")
 	require.NoError(t, err)
 
-	_, err = bash.Run("gotestmd examples/ test-examples/")
+	_, err = bash.Run("gotestmd ./examples ./test-examples github.com/networkservicemesh/gotestmd/test-examples")
 	require.NoError(t, err)
 
 	_, err = bash.Run(`cat > test-examples/entry_point_test.go <<EOF
