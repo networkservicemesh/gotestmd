@@ -33,14 +33,10 @@ jobs:
           echo $GITHUB_WORKSPACE/bin >> $GITHUB_PATH
       - name: Check out code
         uses: actions/checkout@v2
-        with:
-          path: ${{ github.workspace }}/src/github.com/${{ github.repository }}
       - name: Build
         run: go build -race ./...
-        working-directory: ${{ github.workspace }}/src/github.com/${{ github.repository }}
       - name: Test
         run: go test -race ./...
-        working-directory: ${{ github.workspace }}/src/github.com/${{ github.repository }}
  
   golangci-lint:
     name: golangci-lint

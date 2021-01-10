@@ -17,9 +17,6 @@ The result of generating a suite is:
 package helloworld
 
 import (
-	"os"
-	"path/filepath"
-
 	"github.com/networkservicemesh/gotestmd/pkg/suites/shell"
 )
 
@@ -28,10 +25,9 @@ type Suite struct {
 }
 
 func (s *Suite) SetupSuite() {
-	dir := filepath.Join(os.Getenv("GOPATH"), "src", "/github.com/networkservicemesh/gotestmd/examples/HelloWorld")
-	r := s.Runner(dir)
+	r := s.Runner("examples/HelloWorld")
 	r.Run(`echo "Hello world!"`)
 }
-func (s *Suite) Test() {
-}
+func (s *Suite) Test() {}
+
 ```

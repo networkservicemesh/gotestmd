@@ -17,13 +17,9 @@ The result of generating a suite is:
 package consumer2
 
 import (
-	"os"
-	"path/filepath"
-
-	"github.com/stretchr/testify/suite"
-
 	"github.com/networkservicemesh/gotestmd/pkg/suites/shell"
 	"github.com/networkservicemesh/gotestmd/test-examples/producer"
+	"github.com/stretchr/testify/suite"
 )
 
 type Suite struct {
@@ -33,8 +29,7 @@ type Suite struct {
 
 func (s *Suite) SetupSuite() {
 	suite.Run(s.T(), &s.producerSuite)
-	dir := filepath.Join(os.Getenv("GOPATH"), "src", "/github.com/networkservicemesh/gotestmd/examples/Producer/Consumer2")
-	r := s.Runner(dir)
+	r := s.Runner("examples/Producer/Consumer2")
 	r.Run(`echo "I'm the second consumer"`)
 }
 func (s *Suite) Test() {}

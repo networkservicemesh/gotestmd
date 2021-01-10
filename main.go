@@ -1,4 +1,4 @@
-// Copyright (c) 2020 Doc.ai and/or its affiliates.
+// Copyright (c) 2020-2021 Doc.ai and/or its affiliates.
 //
 // SPDX-License-Identifier: Apache-2.0
 //
@@ -19,32 +19,39 @@ package main
 import (
 	"io/ioutil"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/networkservicemesh/gotestmd/pkg/config"
-	"github.com/networkservicemesh/gotestmd/pkg/example"
-	"github.com/networkservicemesh/gotestmd/pkg/templates"
+	"github.com/networkservicemesh/gotestmd/internal/config"
+	"github.com/networkservicemesh/gotestmd/internal/generator"
+	"github.com/networkservicemesh/gotestmd/internal/linker"
+	"github.com/networkservicemesh/gotestmd/internal/parser"
 )
 
 func main() {
 	c := config.FromArgs()
+	_ = os.MkdirAll(c.OutputDir, os.ModePerm)
+	var examples []*parser.Example
+
+	var p = parser.New()
+	var l = linker.New(c.InputDir)
+	var g = generator.New(c)
 	dirs := getRecursiveDirectories(c.InputDir)
-	var examples []*example.Example
 	for _, dir := range dirs {
-		ex, err := example.Parse(dir)
-		if err == nil && !ex.IsEmpty() {
+		ex, err := p.ParseFile(path.Join(dir, "README.md"))
+		if err == nil {
 			examples = append(examples, ex)
 		}
 	}
-	err := example.Build(c.InputDir, examples)
+	linkedExamples, err := l.Link(examples...)
 	if err != nil {
 		logrus.Fatalf("cannot build examples: %v", err.Error())
 	}
 
-	suites := templates.Generate(c, examples)
+	suites := g.Generate(linkedExamples...)
 	for _, suite := range suites {
 		dir, _ := filepath.Split(suite.Location)
 		_ = os.MkdirAll(dir, os.ModePerm)

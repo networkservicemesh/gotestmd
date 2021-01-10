@@ -1,4 +1,4 @@
-// Copyright (c) 2020 Doc.ai and/or its affiliates.
+// Copyright (c) 2020-2021 Doc.ai and/or its affiliates.
 //
 // SPDX-License-Identifier: Apache-2.0
 //
@@ -14,5 +14,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package templates contains templates for generating suites
-package templates
+package parser
+
+// Example represents a markdown example. Contains all needed for generating suites content.
+type Example struct {
+	Includes []string
+	Requires []string
+	Run      []string
+	Cleanup  []string
+	Dir      string
+}

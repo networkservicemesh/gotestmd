@@ -24,9 +24,6 @@ The result of generating a suite is:
 package producer
 
 import (
-	"os"
-	"path/filepath"
-
 	"github.com/networkservicemesh/gotestmd/pkg/suites/shell"
 )
 
@@ -35,8 +32,7 @@ type Suite struct {
 }
 
 func (s *Suite) SetupSuite() {
-	dir := filepath.Join(os.Getenv("GOPATH"), "src", "/github.com/networkservicemesh/gotestmd/examples/Producer")
-	r := s.Runner(dir)
+	r := s.Runner("examples/Producer")
 	s.T().Cleanup(func() {
 		r.Run(`echo "Do teardown logic for the suite here"`)
 	})

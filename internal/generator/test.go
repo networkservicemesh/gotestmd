@@ -1,4 +1,4 @@
-// Copyright (c) 2020 Doc.ai and/or its affiliates.
+// Copyright (c) 2020-2021 Doc.ai and/or its affiliates.
 //
 // SPDX-License-Identifier: Apache-2.0
 //
@@ -14,26 +14,26 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package templates
+package generator
 
 import (
 	"fmt"
 	"strings"
+	"text/template"
 )
 
 const emptyTest = `func (s *Suite) Test() {}`
 
 const testTemplate = `
-func (s *Suite) Test{{ NAME }}() {
-	dir := filepath.Join(os.Getenv("GOPATH"), "src", "{{ DIR }}")
-    r := s.Runner(dir)    
-	{{ CLEANUP }}
-	{{ RUN }}
+func (s *Suite) Test{{ .Name }}() {
+    r := s.Runner("{{ .Dir }}")    
+	{{ .Cleanup }}
+	{{ .Run }}
 }
 `
 
-// TestTemplate is a template for a test for a suite
-type TestTemplate struct {
+// Test is a template for a test for a suite
+type Test struct {
 	Dir     string
 	Name    string
 	Cleanup Body
@@ -41,13 +41,19 @@ type TestTemplate struct {
 }
 
 // String returns string as a test for the suite
-func (t *TestTemplate) String() string {
-	template := testTemplate
+func (t *Test) String() string {
+	source := testTemplate
 	if len(t.Cleanup)+len(t.Run) == 0 {
-		template = emptyTest
+		source = emptyTest
 	}
-	result := strings.ReplaceAll(template, "{{ NAME }}", t.Name)
-	result = strings.ReplaceAll(result, "{{ DIR }}", t.Dir)
+
+	tmpl, err := template.New("test").Parse(
+		source,
+	)
+
+	if err != nil {
+		panic(err.Error())
+	}
 
 	cleanup := t.Cleanup.String()
 	if len(cleanup) > 0 {
@@ -56,8 +62,19 @@ func (t *TestTemplate) String() string {
 	})`, cleanup)
 	}
 
-	result = strings.ReplaceAll(result, "{{ CLEANUP }}", cleanup)
-	result = strings.ReplaceAll(result, "{{ RUN }}", t.Run.String())
+	var result = new(strings.Builder)
 
-	return result
+	_ = tmpl.Execute(result, struct {
+		Dir     string
+		Name    string
+		Cleanup string
+		Run     string
+	}{
+		Name:    t.Name,
+		Dir:     t.Dir,
+		Cleanup: cleanup,
+		Run:     t.Run.String(),
+	})
+
+	return result.String()
 }

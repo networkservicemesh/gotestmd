@@ -1,4 +1,4 @@
-// Copyright (c) 2020 Doc.ai and/or its affiliates.
+// Copyright (c) 2020-2021 Doc.ai and/or its affiliates.
 //
 // SPDX-License-Identifier: Apache-2.0
 //
@@ -18,6 +18,8 @@
 package shell
 
 import (
+	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -38,12 +40,31 @@ func (s *Suite) Runner(dir string, env ...string) *Runner {
 	result := &Runner{
 		t: s.T(),
 	}
-	result.bash.Dir = dir
+	result.bash.Dir = filepath.Join(findRoot(), dir)
 	result.bash.Env = env
 	s.T().Cleanup(func() {
 		result.bash.Close()
 	})
 	return result
+}
+
+func findRoot() string {
+	wd, err := os.Getwd()
+	if err != nil {
+		logrus.Fatal(err.Error())
+	}
+	currDir := wd
+	for len(currDir) > 0 {
+		if err != nil {
+			logrus.Fatal(err.Error())
+		}
+		p := filepath.Clean(filepath.Join(currDir, "go.mod"))
+		if _, err := os.Open(p); err == nil {
+			return currDir
+		}
+		currDir = filepath.Dir(currDir)
+	}
+	return ""
 }
 
 // Runner is shell runner.
