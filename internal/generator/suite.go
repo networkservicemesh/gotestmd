@@ -1,4 +1,4 @@
-// Copyright (c) 2020 Doc.ai and/or its affiliates.
+// Copyright (c) 2020-2021 Doc.ai and/or its affiliates.
 //
 // SPDX-License-Identifier: Apache-2.0
 //
@@ -14,35 +14,32 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package templates
+package generator
 
 import (
 	"fmt"
 	"strings"
+	"text/template"
 )
 
 const suiteTemplate = `
-package {{ NAME }}
+package {{ .Name }}
 
 import(
-	"os"
-	"path/filepath"
-
 	"github.com/networkservicemesh/gotestmd/pkg/suites/shell"
-	{{ IMPORTS }}
+	{{ .Imports }}
 )
 
 type Suite struct {
 	shell.Suite
-	{{ FIELDS }}
+	{{ .Fields }}
 }
 
 func (s *Suite) SetupSuite() {
-	{{ SETUP }}
-	dir := filepath.Join(os.Getenv("GOPATH"), "src", "{{ DIR }}")
-    r := s.Runner(dir)                                                                                                                                                                                                                                                                                                                                   
-	{{ CLEANUP }}
-	{{ RUN }}
+	{{ .Setup }}
+    r := s.Runner("{{.Dir}}")                                                                                                                                                                                                                                                                                                                                   
+	{{ .Cleanup }}
+	{{ .Run }}
 }
 `
 
@@ -74,43 +71,62 @@ func (b Body) String() string {
 	return sb.String()
 }
 
-// SuiteTemplate represents a template for generating a testify suite.Suite
-type SuiteTemplate struct {
+// Suite represents a template for generating a testify suite.Suite
+type Suite struct {
 	Dir      string
 	Location string
 	Dependency
 	Cleanup  Body
 	Run      Body
-	Tests    []*TestTemplate
+	Tests    []*Test
 	Deps     Dependencies
 	TestDeps Dependencies
+	Module   string
 }
 
 // String returns a string that contains generated testify.Suite
-func (s *SuiteTemplate) String() string {
-	result := strings.ReplaceAll(suiteTemplate, "{{ NAME }}", s.Name())
+func (s *Suite) String() string {
+	tmpl, err := template.New("test").Parse(
+		suiteTemplate,
+	)
+
+	if err != nil {
+		panic(err.Error())
+	}
+
 	cleanup := s.Cleanup.String()
 	if len(cleanup) > 0 {
 		cleanup = fmt.Sprintf(`	s.T().Cleanup(func() {
 		%v
 	})`, cleanup)
 	}
-	result = strings.ReplaceAll(result, "{{ CLEANUP }}", cleanup)
-	result = strings.ReplaceAll(result, "{{ RUN }}", s.Run.String())
-	result = strings.ReplaceAll(result, "{{ IMPORTS }}", s.Deps.String())
-	result = strings.ReplaceAll(result, "{{ FIELDS }}", s.Deps.FieldsString())
-	result = strings.ReplaceAll(result, "{{ SETUP }}", s.Deps.SetupString())
-	result = strings.ReplaceAll(result, "{{ DIR }}", s.Dir)
 
-	var sb strings.Builder
-	_, _ = sb.WriteString(result)
+	var result = new(strings.Builder)
+
+	_ = tmpl.Execute(result, struct {
+		Dir     string
+		Name    string
+		Cleanup string
+		Run     string
+		Fields  string
+		Imports string
+		Setup   string
+	}{
+		Dir:     s.Dir,
+		Name:    s.Name(),
+		Cleanup: cleanup,
+		Run:     s.Run.String(),
+		Imports: s.Deps.String(s.Module),
+		Fields:  s.Deps.FieldsString(),
+		Setup:   s.Deps.SetupString(),
+	})
 
 	if len(s.Tests) == 0 {
-		s.Tests = append(s.Tests, new(TestTemplate))
+		s.Tests = append(s.Tests, new(Test))
 	}
 
 	for _, test := range s.Tests {
-		_, _ = sb.WriteString(test.String())
+		_, _ = result.WriteString(test.String())
 	}
-	return spaceRegex.ReplaceAllString(strings.TrimSpace(sb.String()), "\n")
+	return spaceRegex.ReplaceAllString(strings.TrimSpace(result.String()), "\n")
 }

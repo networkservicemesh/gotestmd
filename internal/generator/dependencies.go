@@ -1,4 +1,4 @@
-// Copyright (c) 2020 Doc.ai and/or its affiliates.
+// Copyright (c) 2020-2021 Doc.ai and/or its affiliates.
 //
 // SPDX-License-Identifier: Apache-2.0
 //
@@ -14,9 +14,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package templates
+package generator
 
 import (
+	"path"
 	"path/filepath"
 	"strings"
 )
@@ -72,7 +73,7 @@ func (d Dependencies) SetupString() string {
 }
 
 // String returns a string that contains a declaration of suite dependencies as part of import
-func (d Dependencies) String() string {
+func (d Dependencies) String(module string) string {
 	var result strings.Builder
 
 	if len(d) > 0 {
@@ -83,7 +84,7 @@ func (d Dependencies) String() string {
 
 	for i := 0; i < len(d); i++ {
 		_, _ = result.WriteString("\"")
-		_, _ = result.WriteString(d[i].Pkg())
+		_, _ = result.WriteString(path.Join(module, d[i].Pkg()))
 		_, _ = result.WriteString("\"")
 		if i+1 < len(d) {
 			_, _ = result.WriteString("\n")

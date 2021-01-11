@@ -1,4 +1,4 @@
-// Copyright (c) 2020 Doc.ai and/or its affiliates.
+// Copyright (c) 2020-2021 Doc.ai and/or its affiliates.
 //
 // SPDX-License-Identifier: Apache-2.0
 //
@@ -27,7 +27,7 @@ import (
 
 func TestExamples(t *testing.T) {
 	t.Cleanup(func() {
-		_ = os.RemoveAll("test-examples/")
+		_ = os.RemoveAll("test-examples")
 	})
 	var bash shell.Bash
 	defer bash.Close()

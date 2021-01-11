@@ -1,4 +1,4 @@
-// Copyright (c) 2020 Doc.ai and/or its affiliates.
+// Copyright (c) 2020-2021 Doc.ai and/or its affiliates.
 //
 // SPDX-License-Identifier: Apache-2.0
 //
@@ -19,7 +19,6 @@ package config
 
 import (
 	"os"
-	"path/filepath"
 
 	"github.com/sirupsen/logrus"
 )
@@ -35,20 +34,8 @@ func FromArgs() Config {
 	if len(os.Args) != 3 {
 		logrus.Fatal("ARGs have wrong length. Expected: input-dir output-dir")
 	}
-
-	inputDir, _ := filepath.Abs(os.Args[1])
-	if _, err := os.Open(filepath.Clean(inputDir)); err != nil {
-		logrus.Fatalf("An error during checking dir: %v, error: %v", inputDir, err.Error())
-	}
-	if _, err := os.Open(filepath.Clean(os.Args[2])); err != nil {
-		err = os.MkdirAll(filepath.Clean(os.Args[2]), os.ModePerm)
-		if err != nil {
-			logrus.Fatalf("An error during creating dir: %v, error: %v", os.Args[2], err.Error())
-		}
-	}
-	outputDir, _ := filepath.Abs(os.Args[2])
 	return Config{
-		InputDir:  inputDir,
-		OutputDir: outputDir,
+		InputDir:  os.Args[1],
+		OutputDir: os.Args[2],
 	}
 }
