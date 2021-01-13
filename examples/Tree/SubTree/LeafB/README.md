@@ -18,5 +18,4 @@ func (s *Suite) TestLeafB() {
 	r := s.Runner(dir)
 	r.Run(`echo "I'm leaf B"`)
 }
-
 ```
