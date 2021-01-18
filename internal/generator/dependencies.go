@@ -60,11 +60,9 @@ func (d Dependencies) FieldsString() string {
 func (d Dependencies) SetupString() string {
 	var result strings.Builder
 
-	for i := 0; i < len(d); i++ {
+	for i := 1; i < len(d); i++ {
 		_, _ = result.WriteString("suite.Run(s.T(), &s.")
-		if i != 0 {
-			_, _ = result.WriteString(d[i].Name())
-		}
+		_, _ = result.WriteString(d[i].Name())
 		_, _ = result.WriteString("Suite)")
 		if i+1 < len(d) {
 			_, _ = result.WriteString("\n")
