@@ -58,7 +58,18 @@ func (d Dependencies) FieldsString() string {
 
 // SetupString returns a string that contains a declaration of suite dependencies as part of setup function
 func (d Dependencies) SetupString() string {
+	if len(d) == 0 {
+		return ""
+	}
+
 	var result strings.Builder
+
+	_, _ = result.WriteString(`
+var base interface{} = &s.Suite
+if v, ok := base.(suite.SetupAllSuite); ok {
+	v.SetupSuite()
+}
+`)
 
 	for i := 1; i < len(d); i++ {
 		_, _ = result.WriteString("suite.Run(s.T(), &s.")
