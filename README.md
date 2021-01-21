@@ -4,7 +4,7 @@ Tool to generate go tests based on markdown files.
 
 ## Usages
 
-Generate suties with default bash runner:
+Generate suites with default bash runner:
 
 ```bash
 gotestmd INPUT_DIR OUTPUT_DIR
