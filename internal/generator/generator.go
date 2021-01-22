@@ -42,6 +42,7 @@ func (g *Generator) Generate(examples ...*linker.LinkedExample) []*Suite {
 	var result []*Suite
 	var tests = map[string][]*Test{}
 	var index = map[string]*Suite{}
+	moduleName := moduleName(g.conf.OutputDir)
 	for _, e := range examples {
 		if e.IsLeaf() {
 			_, name := path.Split(e.Name)
@@ -55,15 +56,19 @@ func (g *Generator) Generate(examples ...*linker.LinkedExample) []*Suite {
 			}
 			continue
 		}
+
+		var deps = Dependencies([]Dependency{Dependency(g.conf.BasePkg)})
+		deps = append(deps, normalizeDeps(moduleName, e.Dependencies())...)
+
 		result = append(result, &Suite{
-			Module:     moduleName(g.conf.OutputDir),
 			Dir:        e.Dir,
 			Location:   filepath.Join(g.conf.OutputDir, strings.ToLower(e.Name), "suite.gen.go"),
 			Dependency: Dependency(path.Join(g.conf.OutputDir, strings.ToLower(e.Name))),
 			Cleanup:    e.Cleanup,
 			Run:        e.Run,
-			Deps:       normalizeDeps(e.Dependencies()),
+			Deps:       deps,
 		})
+
 		index[e.Name] = result[len(result)-1]
 	}
 

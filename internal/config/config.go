@@ -27,15 +27,23 @@ import (
 type Config struct {
 	InputDir  string
 	OutputDir string
+	BasePkg   string
 }
 
 // FromArgs returns Config from the os.Args
 func FromArgs() Config {
-	if len(os.Args) != 3 {
-		logrus.Fatal("ARGs have wrong length. Expected: input-dir output-dir")
+	if len(os.Args) < 3 || len(os.Args) > 4 {
+		logrus.Fatal("ARGs have wrong length. Expected: (string)input-dir (string)output-dir (string)base-pkg[optional]")
 	}
-	return Config{
+	result := Config{
 		InputDir:  os.Args[1],
 		OutputDir: os.Args[2],
+		BasePkg:   "github.com/networkservicemesh/gotestmd/pkg/suites/shell",
 	}
+
+	if len(os.Args) == 4 {
+		result.BasePkg = os.Args[3]
+	}
+
+	return result
 }

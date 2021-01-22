@@ -73,6 +73,11 @@ type Runner struct {
 	bash Bash
 }
 
+// Dir returns the directory where located current runner intstance
+func (r *Runner) Dir() string {
+	return r.bash.Dir
+}
+
 // Run runs cmd logs stdout, stderror, stdin
 // Tries to run cmd on fail during timeout.
 // Test could fail on the error or achieved cmd timeout.

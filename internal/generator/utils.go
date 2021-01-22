@@ -33,13 +33,14 @@ func normalizeName(s string) string {
 	return strings.ToLower(nameRegex.ReplaceAllString(s, "_"))
 }
 
-func normalizeDeps(deps []string) Dependencies {
+func normalizeDeps(module string, deps []string) Dependencies {
 	var d Dependencies
 	for _, dep := range deps {
 		pieces := strings.Split(filepath.Clean(dep), string(filepath.Separator))
 		for i := 0; i < len(pieces); i++ {
 			pieces[i] = normalizeName(pieces[i])
 		}
+		pieces = append([]string{module}, pieces...)
 		d = append(d, Dependency(filepath.Join(pieces...)))
 	}
 	return d
