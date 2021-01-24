@@ -42,6 +42,7 @@ type Bash struct {
 
 // Close closses current bash process and all used resources
 func (b *Bash) Close() {
+	b.once.Do(b.init)
 	b.cancel()
 	_, _ = b.stdin.Write([]byte("exit 0\n"))
 	_ = b.cmd.Wait()
