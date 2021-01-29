@@ -26,6 +26,8 @@ jobs:
           token: ${{ secrets.NSM_BOT_GITHUB_TOKEN }}
       - name: Install gotestmd
         run: "go install ./..."
+      - name: Install goimports
+        run: "go get golang.org/x/tools/cmd/goimports"
         working-directory: ${{ github.workspace }}/src/github.com/${{ github.repository }}
       - name: Find merged PR
         uses: jwalton/gh-find-current-pr@v1
