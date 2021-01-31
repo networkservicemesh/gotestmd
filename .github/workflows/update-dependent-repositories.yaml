@@ -51,7 +51,7 @@ jobs:
           go mod tidy
           git diff
       - name: Push update to the ${{ matrix.repository }}
-        working-directory: networkservicemesh/${{ matrix.repository }}
+        working-directory: ${{ github.workspace }}/src/github.com/networkservicemesh/${{ matrix.repository }}
         run: |
           echo Starting to update repositotry ${{ matrix.repository }}
           git config --global user.email "nsmbot@networkservicmesh.io"
