@@ -34,17 +34,6 @@ jobs:
         id: findPr
         with:
           github-token: ${{ github.token }}
-      - name: Create commit message
-        working-directory: ${{ github.workspace }}/src/github.com/${{ github.repository }}
-        run: |
-          echo "Update go.mod and go.sum to latest version from ${{ github.repository }}@master ${{ github.repository }}#${{ steps.findPr.outputs.pr }}" >> /tmp/commit-message
-          echo "" >> /tmp/commit-message
-          echo "${{ github.repository }} PR link: https://github.com/${{ github.repository }}/pull/${{ steps.findPr.outputs.pr }}" >> /tmp/commit-message
-          echo "" >> /tmp/commit-message
-          echo "${{ github.repository }} commit message:" >> /tmp/commit-message
-          git log -1 >> /tmp/commit-message
-          echo "Commit Message:"
-          cat /tmp/commit-message
       - name: Checkout networkservicemesh/${{ matrix.repository }}
         uses: actions/checkout@v2
         with:
@@ -72,6 +61,14 @@ jobs:
             echo ${{ matrix.repository }} is up to date
             exit 0;
           fi
+          echo "Update go.mod and go.sum to latest version from ${{ github.repository }}@main ${{ github.repository }}#${{ steps.findPr.outputs.pr }}" >> /tmp/commit-message
+          echo "" >> /tmp/commit-message
+          echo "${{ github.repository }} PR link: https://github.com/${{ github.repository }}/pull/${{ steps.findPr.outputs.pr }}" >> /tmp/commit-message
+          echo "" >> /tmp/commit-message
+          echo "${{ github.repository }} commit message:" >> /tmp/commit-message
+          git log -1 >> /tmp/commit-message
+          echo "Commit Message:"
+          cat /tmp/commit-message
           git commit -s -F /tmp/commit-message
           git checkout -b update/${{ github.repository }}
           git push -f origin update/${{ github.repository }}
