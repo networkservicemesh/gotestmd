@@ -13,19 +13,23 @@ jobs:
     name: Update ${{ matrix.repository }}
     runs-on: ubuntu-latest
     steps:
-      - name: Setup envs
-        run: |
-          echo GOPATH=$GITHUB_WORKSPACE >> $GITHUB_ENV
-          echo GO111MODULE=on >> $GITHUB_ENV
-          echo $GITHUB_WORKSPACE/bin >> $GITHUB_PATH
       - name: Checkout ${{ github.repository }}
         uses: actions/checkout@v2
         with:
           path: ${{ github.workspace }}/src/github.com/${{ github.repository }}
           repository: ${{ github.repository }}
           token: ${{ secrets.NSM_BOT_GITHUB_TOKEN }}
+      - uses: actions/setup-go@v1
+        with:
+          go-version: 1.15
+      - name: Setup envs
+        run: |
+          echo GOPATH=$GITHUB_WORKSPACE >> $GITHUB_ENV
+          echo GO111MODULE=on >> $GITHUB_ENV
+          echo $GITHUB_WORKSPACE/bin >> $GITHUB_PATH
       - name: Install gotestmd
         run: "go install ./..."
+        working-directory: ${{ github.workspace }}/src/github.com/${{ github.repository }}
       - name: Install goimports
         run: "go get golang.org/x/tools/cmd/goimports"
         working-directory: ${{ github.workspace }}/src/github.com/${{ github.repository }}
@@ -40,9 +44,6 @@ jobs:
           path: ${{ github.workspace }}/src/github.com/networkservicemesh/${{ matrix.repository }}
           repository: networkservicemesh/${{ matrix.repository }}
           token: ${{ secrets.NSM_BOT_GITHUB_TOKEN }}
-      - uses: actions/setup-go@v1
-        with:
-          go-version: 1.15
       - name: Update ${{ github.repository }} locally
         working-directory: ${{ github.workspace }}/src/github.com/networkservicemesh/${{ matrix.repository }}
         run: |
