@@ -64,21 +64,27 @@ func (d Dependencies) SetupString() string {
 
 	var result strings.Builder
 
-	_, _ = result.WriteString(`
-var base interface{} = &s.Suite
-if v, ok := base.(suite.SetupAllSuite); ok {
-	v.SetupSuite()
-}
-`)
-
+	result.WriteString("parents := []interface{}{")
+	result.WriteString("&s.Suite")
 	for i := 1; i < len(d); i++ {
-		_, _ = result.WriteString("suite.Run(s.T(), &s.")
-		_, _ = result.WriteString(d[i].Name())
-		_, _ = result.WriteString("Suite)")
-		if i+1 < len(d) {
-			_, _ = result.WriteString("\n")
+		if i < len(d) {
+			result.WriteString(",")
+		}
+		result.WriteString("&s.")
+		result.WriteString(d[i].Name())
+		result.WriteString("Suite")
+	}
+	result.WriteString("}\n")
+
+	result.WriteString(`for _, p := range parents {
+		if v, ok := p.(suite.TestingSuite); ok {
+			v.SetT(s.T())
+		}
+		if v, ok := p.(suite.SetupAllSuite); ok {
+			v.SetupSuite()
 		}
 	}
+`)
 
 	return result.String()
 }
@@ -88,9 +94,8 @@ func (d Dependencies) String() string {
 	var result strings.Builder
 
 	if len(d) > 0 {
-		_, _ = result.WriteString("\"")
-		result.WriteString("github.com/stretchr/testify/suite")
-		_, _ = result.WriteString("\"\n")
+		_, _ = result.WriteString(`"github.com/stretchr/testify/suite"`)
+		_, _ = result.WriteString("\n")
 	}
 
 	for i := 0; i < len(d); i++ {

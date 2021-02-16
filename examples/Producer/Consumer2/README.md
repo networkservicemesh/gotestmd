@@ -29,7 +29,15 @@ type Suite struct {
 }
 
 func (s *Suite) SetupSuite() {
-	suite.Run(s.T(), &s.producerSuite)
+	parents := []interface{}{&s.Suite, &s.producerSuite}
+	for _, p := range parents {
+		if v, ok := p.(suite.TestingSuite); ok {
+			v.SetT(s.T())
+		}
+		if v, ok := p.(suite.SetupAllSuite); ok {
+			v.SetupSuite()
+		}
+	}
 	r := s.Runner("examples/Producer/Consumer2")
 	r.Run(`echo "I'm the second consumer"`)
 }

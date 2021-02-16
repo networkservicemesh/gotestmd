@@ -18,6 +18,7 @@ package consumer1
 
 import (
 	"github.com/networkservicemesh/gotestmd/pkg/suites/shell"
+	"github.com/stretchr/testify/suite"
 )
 
 type Suite struct {
@@ -25,6 +26,15 @@ type Suite struct {
 }
 
 func (s *Suite) SetupSuite() {
+	parents := []interface{}{&s.Suite}
+	for _, p := range parents {
+		if v, ok := p.(suite.TestingSuite); ok {
+			v.SetT(s.T())
+		}
+		if v, ok := p.(suite.SetupAllSuite); ok {
+			v.SetupSuite()
+		}
+	}
 	r := s.Runner("examples/Producer/Consumer1")
 	r.Run(`echo "I'm the first consumer"`)
 }

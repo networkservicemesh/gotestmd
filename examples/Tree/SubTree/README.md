@@ -27,32 +27,32 @@ The result of generating a suite from this file will be:
 package subtree
 
 import (
-	"os"
-	"path/filepath"
-
 	"github.com/networkservicemesh/gotestmd/pkg/suites/shell"
-	"github.com/networkservicemesh/gotestmd/test-examples/tree"
+	"github.com/stretchr/testify/suite"
 )
 
 type Suite struct {
 	shell.Suite
-	treeSuite tree.Suite
 }
 
 func (s *Suite) SetupSuite() {
-	s.Suite.SetupSuite()
-	s.treeSuite.Suite = s.Suite
-	s.treeSuite.SetupSuite()
-	dir := filepath.Join(os.Getenv("GOPATH"), "src", "/github.com/networkservicemesh/gotestmd/examples/Tree/SubTree")
-    r := s.Runner(dir)
-
+	parents := []interface{}{&s.Suite}
+	for _, p := range parents {
+		if v, ok := p.(suite.TestingSuite); ok {
+			v.SetT(s.T())
+		}
+		if v, ok := p.(suite.SetupAllSuite); ok {
+			v.SetupSuite()
+		}
+	}
+	r := s.Runner("examples/Tree/SubTree")
+	s.T().Cleanup(func() {
+		r.Run(`echo "Sub tree is done"`)
+	})
 	r.Run(`echo "I'm sub tree"`)
 }
-
 func (s *Suite) TestLeafB() {
-	dir := filepath.Join(os.Getenv("GOPATH"), "src", "/github.com/networkservicemesh/gotestmd/examples/Tree/SubTree/LeafB")
-	r := s.Runner(dir)
-
-    r.Run(`echo "I'm leaf B"`)
+	r := s.Runner("examples/Tree/SubTree/LeafB")
+	r.Run(`echo "I'm leaf B"`)
 }
 ```
