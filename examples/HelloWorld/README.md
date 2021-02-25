@@ -7,6 +7,7 @@ The file will include only one test because this example doesn't depend on other
 ## Run
 
 ```bash
+# Hello world!
 echo "Hello world!"
 ```
 
@@ -37,7 +38,7 @@ func (s *Suite) SetupSuite() {
 		}
 	}
 	r := s.Runner("examples/HelloWorld")
-	r.Run(`echo "Hello world!"`)
+	r.Run(`# Hello world!` + "\n" + `echo "Hello world!"`)
 }
 func (s *Suite) Test() {}
 ```

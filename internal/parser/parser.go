@@ -64,15 +64,23 @@ func (p *Parser) Parse(r io.Reader) (*Example, error) {
 	source := string(bytes)
 
 	parseScript := func(s string) []string {
+		const (
+			scriptBegin = "```bash"
+			scriptEnd   = "```"
+		)
+
 		var r []string
-		const begin = "```bash"
-		for start := strings.Index(s, begin); start > 0; start = strings.Index(s, begin) {
-			end := strings.Index(s[start+len(begin):], "```") + start + len(begin)
+		for start := strings.Index(s, scriptBegin); start >= 0; start = strings.Index(s, scriptBegin) {
+			start += len(scriptBegin)
+
+			end := strings.Index(s[start:], scriptEnd)
 			if end < 0 {
 				break
 			}
-			r = append(r, strings.TrimSpace(s[start+len(begin):end]))
-			s = s[end+len("```"):]
+			end += start
+
+			r = append(r, strings.TrimSpace(s[start:end]))
+			s = s[end+len(scriptEnd):]
 		}
 		return r
 	}
@@ -89,7 +97,7 @@ func (p *Parser) parseLinks(s string) []string {
 	var result []string
 	links := p.linkRegex.FindAllString(s, -1)
 	for _, link := range links {
-		start := strings.IndexRune(link, '(') + len(string("("))
+		start := strings.IndexRune(link, '(') + len("(")
 		end := strings.IndexRune(link, ')')
 		result = append(result, link[start:end])
 	}
@@ -97,15 +105,41 @@ func (p *Parser) parseLinks(s string) []string {
 }
 
 func parseSection(section, s string) string {
+	const (
+		sectionEnd = "#"
+		blockDelim = "```"
+	)
+
 	start := strings.Index(s, section)
 	if start == -1 {
 		return ""
 	}
-	const end = "#"
+
 	s = s[start+len(section):]
-	e := strings.Index(s, end)
-	if e == -1 {
-		return s
+
+	end := -1
+	for blockEnd := 0; blockEnd > end; {
+		if end = strings.Index(s[blockEnd:], sectionEnd); end == -1 {
+			return s
+		}
+		end += blockEnd
+
+		for {
+			blockStart := strings.Index(s[blockEnd:], blockDelim)
+			if blockStart < 0 {
+				break
+			}
+			blockStart += blockEnd + len(blockDelim)
+
+			if blockStart > end {
+				break
+			}
+
+			if blockEnd = strings.Index(s[blockStart:], blockDelim); blockEnd < 0 {
+				return s
+			}
+			blockEnd += blockStart + len(blockDelim)
+		}
 	}
-	return s[:e]
+	return s[:end]
 }
