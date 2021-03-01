@@ -11,6 +11,13 @@ The file will include only one test because this example doesn't depend on other
 echo "Hello world!"
 ```
 
+## Cleanup
+
+```bash
+# Good bye
+echo "Good bye!"
+```
+
 # Results
 
 The result of generating a suite is:
@@ -38,6 +45,9 @@ func (s *Suite) SetupSuite() {
 		}
 	}
 	r := s.Runner("examples/HelloWorld")
+	s.T().Cleanup(func() {
+		r.Run(`# Good bye` + "\n" + `echo "Good bye!"`)
+	})
 	r.Run(`# Hello world!` + "\n" + `echo "Hello world!"`)
 }
 func (s *Suite) Test() {}

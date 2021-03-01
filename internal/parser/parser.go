@@ -105,10 +105,7 @@ func (p *Parser) parseLinks(s string) []string {
 }
 
 func parseSection(section, s string) string {
-	const (
-		sectionEnd = "#"
-		blockDelim = "```"
-	)
+	const sectionEnd = "#"
 
 	start := strings.Index(s, section)
 	if start == -1 {
@@ -117,29 +114,31 @@ func parseSection(section, s string) string {
 
 	s = s[start+len(section):]
 
-	end := -1
-	for blockEnd := 0; blockEnd > end; {
-		if end = strings.Index(s[blockEnd:], sectionEnd); end == -1 {
+	end, offset := -1, 0
+	for blockEnd := 0; blockEnd > end; offset += blockEnd {
+		if end = strings.Index(s[offset:], sectionEnd); end < 0 {
 			return s
 		}
-		end += blockEnd
 
-		for {
-			blockStart := strings.Index(s[blockEnd:], blockDelim)
-			if blockStart < 0 {
-				break
-			}
-			blockStart += blockEnd + len(blockDelim)
-
-			if blockStart > end {
-				break
-			}
-
-			if blockEnd = strings.Index(s[blockStart:], blockDelim); blockEnd < 0 {
-				return s
-			}
-			blockEnd += blockStart + len(blockDelim)
+		if blockEnd = skipBlocks(s[offset:], end); blockEnd < 0 {
+			break
 		}
 	}
-	return s[:end]
+	return s[:end+offset]
+}
+
+func skipBlocks(s string, sectionEnd int) (end int) {
+	const blockDelim = "```"
+
+	for start := strings.Index(s[end:], blockDelim); start > 0; start = strings.Index(s[end:], blockDelim) {
+		if start += end + len(blockDelim); start > sectionEnd {
+			return end
+		}
+
+		if end = strings.Index(s[start:], blockDelim); end < 0 {
+			return end
+		}
+		end += start + len(blockDelim)
+	}
+	return end
 }
