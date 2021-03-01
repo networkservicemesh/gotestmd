@@ -114,13 +114,13 @@ func parseSection(section, s string) string {
 
 	s = s[start+len(section):]
 
-	end, offset := -1, 0
-	for blockEnd := 0; blockEnd > end; offset += blockEnd {
+	var end, offset int
+	for blockEnd := 0; ; offset += blockEnd {
 		if end = strings.Index(s[offset:], sectionEnd); end < 0 {
 			return s
 		}
 
-		if blockEnd = skipBlocks(s[offset:], end); blockEnd < 0 {
+		if blockEnd = skipBlocks(s[offset:], end); blockEnd < end {
 			break
 		}
 	}
@@ -136,7 +136,7 @@ func skipBlocks(s string, sectionEnd int) (end int) {
 		}
 
 		if end = strings.Index(s[start:], blockDelim); end < 0 {
-			return end
+			return len(s)
 		}
 		end += start + len(blockDelim)
 	}
