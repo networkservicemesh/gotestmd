@@ -19,10 +19,12 @@ gotestmd INPUT_DIR OUTPUT_DIR BASE_PKG
 
 ## Makrdown syntax
 
-- `#Run` - **REQUIRED**  - Contains any text and `bash` steps. Can be any level, should be used once in a file. 
+- `#Run` - _OPTIONAL_  - Contains any text and `bash` steps. Can be any level, should be used once in a file. 
 - `#Cleanup` - _OPTIONAL_ - Contains `bash` steps. Can be any level, should be used once in a file. 
 - `#Requires` - _OPTIONAL_ - Contains a list of required dependencies in format markdown links.
 - `#Includes` - _OPTIONAL_ -Contains a list of using examples in context of this example in format markdown links.
+
+To generate minimal suite required one of sections: `Run` or `Cleanup` or `Requires`.
 
 # Examples
 
