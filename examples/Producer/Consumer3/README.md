@@ -12,6 +12,17 @@
 
 ```bash
 echo "I'm the third consumer"
+# Long test
+echo "Doing some work..."
+echo "Doing some work..."
+echo "Doing some work..."
+echo "Doing some work..."
+echo "Doing some work..."
+echo "Doing some work..."
+echo "Doing some work..."
+echo "Doing some work..."
+echo "Doing some work..."
+echo "Done!"
 ```
 
 # Results
@@ -45,7 +56,7 @@ func (s *Suite) SetupSuite() {
 		}
 	}
 	r := s.Runner("examples/Producer/Consumer3")
-	r.Run(`echo "I'm the third consumer"`)
+	r.Run(`echo "I'm the third consumer"` + "\n" + `# Long test` + "\n" + `echo "Doing some work..."` + "\n" + `echo "Doing some work..."` + "\n" + `echo "Doing some work..."` + "\n" + `echo "Doing some work..."` + "\n" + `echo "Doing some work..."` + "\n" + `echo "Doing some work..."` + "\n" + `echo "Doing some work..."` + "\n" + `echo "Doing some work..."` + "\n" + `echo "Doing some work..."` + "\n" + `echo "Done!"`)
 }
 func (s *Suite) Test() {}
 ```
