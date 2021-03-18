@@ -54,5 +54,14 @@ func (l *Linker) Link(examples ...*parser.Example) ([]*LinkedExample, error) {
 			linkedExample.Childs = append(linkedExample.Childs, child)
 		}
 	}
+	for _, linkedExample := range result {
+		var filteredRequires []string
+		for _, require := range linkedExample.Requires {
+			if _, ok := linkedExample.getParentDependencies()[require]; !ok {
+				filteredRequires = append(filteredRequires, require)
+			}
+		}
+		linkedExample.Requires = filteredRequires
+	}
 	return result, nil
 }
