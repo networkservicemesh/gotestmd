@@ -43,6 +43,7 @@ func (e *LinkedExample) getParentDependencies() map[string]struct{} {
 		for dep := range parent.getParentDependencies() {
 			result[dep] = struct{}{}
 		}
+		result[parent.Name] = struct{}{}
 	}
 	e.parentDependencies = result
 	return result
