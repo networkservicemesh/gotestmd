@@ -57,7 +57,6 @@ func (e *LinkedExample) IsLeaf() bool {
 // Dependencies returns unique dependecies for this example
 func (e *LinkedExample) Dependencies() []string {
 	var deps []string
-	var parentDeps []string
 
 	for _, child := range e.Childs {
 		if child.IsLeaf() {
@@ -66,13 +65,20 @@ func (e *LinkedExample) Dependencies() []string {
 		deps = append(deps, child.Name)
 	}
 
+	return append(e.SetupDependencies(), deps...)
+}
+
+// SetupDependencies returns setup dependecies for this example
+func (e *LinkedExample) SetupDependencies() []string {
+	var deps []string
+
 	for _, dep := range e.Requires {
 		if _, ok := e.getParentDependencies()[dep]; !ok {
-			parentDeps = append(parentDeps, dep)
+			deps = append(deps, dep)
 		}
 	}
 
-	return append(parentDeps, deps...)
+	return deps
 }
 
 // NewLinkedExample creates new linked example based on parser.Example

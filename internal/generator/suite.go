@@ -18,6 +18,7 @@ package generator
 
 import (
 	"fmt"
+	"path"
 	"strings"
 	"text/template"
 )
@@ -40,7 +41,26 @@ func (s *Suite) SetupSuite() {
 	{{ end }}
 	{{ .Cleanup }}
 	{{ .Run }}
+
+	s.RunIncludedSuites()
 }
+
+func (s *Suite) RunIncludedSuites() {
+	{{ .TestIncludedSuites }}
+}
+`
+
+const includedSuiteTemplate = `
+	{{ range .Suites }}
+		s.Run("{{ .Title }}", func() {
+			{{ $suiteName := .Name }}
+			s.{{ $suiteName }}Suite.SetT(s.T())
+			s.{{ $suiteName }}Suite.SetupSuite()
+			{{ range .Tests }}
+				s.{{ $suiteName }}Suite.Run("Test{{ . }}", s.{{ $suiteName }}Suite.Test{{ . }})
+			{{ end }}
+		})
+	{{ end }}
 `
 
 // Body represents a body of the method
@@ -76,11 +96,51 @@ type Suite struct {
 	Dir      string
 	Location string
 	Dependency
-	Cleanup  Body
-	Run      Body
-	Tests    []*Test
-	Deps     Dependencies
-	TestDeps Dependencies
+	Cleanup   Body
+	Run       Body
+	Tests     []*Test
+	Children  []*Suite
+	Deps      Dependencies
+	SetupDeps Dependencies
+}
+
+func (s *Suite) generateChildrenTesting() string {
+	tmpl, err := template.New("test").Parse(includedSuiteTemplate)
+	if err != nil {
+		panic(err.Error())
+	}
+
+	type suiteData struct {
+		Title string
+		Name  string
+		Tests []string
+	}
+
+	var suites []*suiteData
+	for _, child := range s.Children {
+		_, title := path.Split(child.Dir)
+		title = strings.Title(nameRegex.ReplaceAllString(title, "_"))
+		suite := &suiteData{
+			Title: title,
+			Name:  child.Name(),
+		}
+		for _, t := range child.Tests {
+			suite.Tests = append(suite.Tests, t.Name)
+		}
+
+		suites = append(suites, suite)
+	}
+
+	var result = new(strings.Builder)
+	err = tmpl.Execute(result, struct {
+		Suites []*suiteData
+	}{
+		Suites: suites,
+	})
+	if err != nil {
+		panic(err.Error())
+	}
+	return result.String()
 }
 
 // String returns a string that contains generated testify.Suite
@@ -103,21 +163,23 @@ func (s *Suite) String() string {
 	var result = new(strings.Builder)
 
 	_ = tmpl.Execute(result, struct {
-		Dir     string
-		Name    string
-		Cleanup string
-		Run     string
-		Fields  string
-		Imports string
-		Setup   string
+		Dir                string
+		Name               string
+		Cleanup            string
+		Run                string
+		Fields             string
+		Imports            string
+		Setup              string
+		TestIncludedSuites string
 	}{
-		Dir:     s.Dir,
-		Name:    s.Name(),
-		Cleanup: cleanup,
-		Run:     s.Run.String(),
-		Imports: s.Deps.String(),
-		Fields:  s.Deps.FieldsString(),
-		Setup:   s.Deps.SetupString(),
+		Dir:                s.Dir,
+		Name:               s.Name(),
+		Cleanup:            cleanup,
+		Run:                s.Run.String(),
+		Imports:            s.Deps.String(),
+		Fields:             s.Deps.FieldsString(),
+		Setup:              s.SetupDeps.SetupString(),
+		TestIncludedSuites: s.generateChildrenTesting(),
 	})
 
 	if len(s.Tests) == 0 {
