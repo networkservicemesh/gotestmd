@@ -53,13 +53,40 @@ func (s *Suite) RunIncludedSuites() {
 `
 
 const includedSuiteTemplate = `
+	runTest := func(subSuite suite.TestingSuite, suiteName, testName string, subtest func()) {
+		type runner interface {
+			Run(name string, f func()) bool
+		}
+
+		defer func() {
+			if afterTestSuite, ok := subSuite.(suite.AfterTest); ok {
+				afterTestSuite.AfterTest(suiteName, testName)
+			}
+
+			if tearDownTestSuite, ok := subSuite.(suite.TearDownTestSuite); ok {
+				tearDownTestSuite.TearDownTest()
+			}
+		}()
+
+		if setupTestSuite, ok := subSuite.(suite.SetupTestSuite); ok {
+			setupTestSuite.SetupTest()
+		}
+		if beforeTestSuite, ok := subSuite.(suite.BeforeTest); ok {
+			beforeTestSuite.BeforeTest(suiteName, testName)
+		}
+
+		// Run test
+		subSuite.(runner).Run(testName, subtest)
+	}
+
 	{{ range .Suites }}
 		s.Run("{{ .Title }}", func() {
 			{{ $suiteName := .Name }}
+			{{ $suiteTitle := .Title }}
 			s.{{ $suiteName }}Suite.SetT(s.T())
 			s.{{ $suiteName }}Suite.SetupSuite()
 			{{ range .Tests }}
-				s.{{ $suiteName }}Suite.Run("Test{{ . }}", s.{{ $suiteName }}Suite.Test{{ . }})
+				runTest(&s.{{ $suiteName }}Suite, "{{ $suiteTitle }}", "Test{{ . }}", s.{{ $suiteName }}Suite.Test{{ . }})
 			{{ end }}
 		})
 	{{ end }}
