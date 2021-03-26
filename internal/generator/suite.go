@@ -42,11 +42,13 @@ func (s *Suite) SetupSuite() {
 	{{ .Cleanup }}
 	{{ .Run }}
 
+{{ if .TestIncludedSuites }}
 	s.RunIncludedSuites()
 }
 
 func (s *Suite) RunIncludedSuites() {
 	{{ .TestIncludedSuites }}
+{{ end }}
 }
 `
 
@@ -114,6 +116,10 @@ func (s *Suite) generateChildrenTesting() string {
 		Title string
 		Name  string
 		Tests []string
+	}
+
+	if len(s.Children) == 0 {
+		return ""
 	}
 
 	var suites []*suiteData
