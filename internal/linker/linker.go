@@ -51,7 +51,7 @@ func (l *Linker) Link(examples ...*parser.Example) ([]*LinkedExample, error) {
 				return nil, errors.Errorf("unknown include %v for example %v", include, linkedExample.Name)
 			}
 			child.Parents = append(child.Parents, linkedExample)
-			linkedExample.Childs = append(linkedExample.Childs, child)
+			linkedExample.Children = append(linkedExample.Children, child)
 		}
 	}
 	for _, linkedExample := range result {

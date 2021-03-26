@@ -26,7 +26,7 @@ import (
 type LinkedExample struct {
 	*parser.Example
 	Name               string
-	Childs             []*LinkedExample
+	Children           []*LinkedExample
 	Parents            []*LinkedExample
 	parentDependencies map[string]struct{}
 }
@@ -51,28 +51,34 @@ func (e *LinkedExample) getParentDependencies() map[string]struct{} {
 
 // IsLeaf returns true if the example have not children and is not using as a dependency
 func (e *LinkedExample) IsLeaf() bool {
-	return len(e.Childs) == 0 && len(e.Requires) == 0 && len(e.Parents) > 0
+	return len(e.Children) == 0 && len(e.Requires) == 0 && len(e.Parents) > 0
 }
 
 // Dependencies returns unique dependecies for this example
 func (e *LinkedExample) Dependencies() []string {
 	var deps []string
-	var parentDeps []string
 
-	for _, child := range e.Childs {
+	for _, child := range e.Children {
 		if child.IsLeaf() {
 			continue
 		}
 		deps = append(deps, child.Name)
 	}
 
+	return append(e.ParentDependencies(), deps...)
+}
+
+// ParentDependencies returns suites to setup before this example
+func (e *LinkedExample) ParentDependencies() []string {
+	var deps []string
+
 	for _, dep := range e.Requires {
 		if _, ok := e.getParentDependencies()[dep]; !ok {
-			parentDeps = append(parentDeps, dep)
+			deps = append(deps, dep)
 		}
 	}
 
-	return append(parentDeps, deps...)
+	return deps
 }
 
 // NewLinkedExample creates new linked example based on parser.Example

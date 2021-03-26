@@ -57,7 +57,7 @@ type Suite struct {
 }
 
 func (s *Suite) SetupSuite() {
-	parents := []interface{}{&s.Suite, &s.subtreeSuite}
+	parents := []interface{}{&s.Suite}
 	for _, p := range parents {
 		if v, ok := p.(suite.TestingSuite); ok {
 			v.SetT(s.T())
@@ -71,6 +71,14 @@ func (s *Suite) SetupSuite() {
 		r.Run(`rm -rf ${MY_TEST_DIR}`)
 	})
 	r.Run(`MY_TEST_DIR=resources ` + "\n" + `echo "mkdir ${MY_TEST_DIR}"`)
+	s.RunIncludedSuites()
+}
+func (s *Suite) RunIncludedSuites() {
+	s.Run("SubTree", func() {
+		s.subtreeSuite.SetT(s.T())
+		s.subtreeSuite.SetupSuite()
+		s.subtreeSuite.Run("TestLeafB", s.subtreeSuite.TestLeafB)
+	})
 }
 func (s *Suite) TestLeafA() {
 	r := s.Runner("examples/Tree/LeafA")
