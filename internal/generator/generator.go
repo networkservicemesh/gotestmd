@@ -58,22 +58,25 @@ func (g *Generator) Generate(examples ...*linker.LinkedExample) []*Suite {
 			continue
 		}
 
+		// Dependencies to import
 		var deps = Dependencies([]Dependency{Dependency(g.conf.BasePkg)})
 		deps = append(deps, normalizeDeps(moduleName, e.Dependencies())...)
 
-		var setupDeps = Dependencies([]Dependency{Dependency(g.conf.BasePkg)})
-		setupDeps = append(setupDeps, normalizeDeps(moduleName, e.SetupDependencies())...)
+		// Parent suites to setup first
+		var depsToSetup = Dependencies([]Dependency{Dependency(g.conf.BasePkg)})
+		depsToSetup = append(depsToSetup, normalizeDeps(moduleName, e.ParentDependencies())...)
 
 		s := &Suite{
-			Dir:        e.Dir,
-			Location:   filepath.Join(g.conf.OutputDir, strings.ToLower(e.Name), "suite.gen.go"),
-			Dependency: Dependency(path.Join(g.conf.OutputDir, strings.ToLower(e.Name))),
-			Cleanup:    e.Cleanup,
-			Run:        e.Run,
-			Deps:       deps,
-			SetupDeps:  setupDeps,
+			Dir:         e.Dir,
+			Location:    filepath.Join(g.conf.OutputDir, strings.ToLower(e.Name), "suite.gen.go"),
+			Dependency:  Dependency(path.Join(g.conf.OutputDir, strings.ToLower(e.Name))),
+			Cleanup:     e.Cleanup,
+			Run:         e.Run,
+			Deps:        deps,
+			DepsToSetup: depsToSetup,
 		}
 
+		// Remember if suite is a subsuite
 		for _, parent := range e.Parents {
 			children[parent.Name] = append(children[parent.Name], s)
 		}
@@ -82,10 +85,12 @@ func (g *Generator) Generate(examples ...*linker.LinkedExample) []*Suite {
 		index[e.Name] = s
 	}
 
+	// Apply tests to the suites
 	for k, v := range tests {
 		index[k].Tests = append(index[k].Tests, v...)
 	}
 
+	// Apply subsuites to the suites
 	for k, v := range children {
 		index[k].Children = append(index[k].Children, v...)
 	}

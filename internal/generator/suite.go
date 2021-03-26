@@ -98,12 +98,12 @@ type Suite struct {
 	Dir      string
 	Location string
 	Dependency
-	Cleanup   Body
-	Run       Body
-	Tests     []*Test
-	Children  []*Suite
-	Deps      Dependencies
-	SetupDeps Dependencies
+	Cleanup     Body
+	Run         Body
+	Tests       []*Test
+	Children    []*Suite
+	Deps        Dependencies
+	DepsToSetup Dependencies
 }
 
 func (s *Suite) generateChildrenTesting() string {
@@ -184,7 +184,7 @@ func (s *Suite) String() string {
 		Run:                s.Run.String(),
 		Imports:            s.Deps.String(),
 		Fields:             s.Deps.FieldsString(),
-		Setup:              s.SetupDeps.SetupString(),
+		Setup:              s.DepsToSetup.SetupString(),
 		TestIncludedSuites: s.generateChildrenTesting(),
 	})
 
