@@ -1,4 +1,4 @@
-// Copyright (c) 2020 Doc.ai and/or its affiliates.
+// Copyright (c) 2020-2021 Doc.ai and/or its affiliates.
 //
 // SPDX-License-Identifier: Apache-2.0
 //
@@ -18,7 +18,9 @@ package shell_test
 
 import (
 	"io/ioutil"
+	"math/rand"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -66,4 +68,35 @@ func TestShellLongOperation(t *testing.T) {
 	out, err := bash.Run("sleep 1s; echo hi")
 	require.NoError(t, err)
 	require.Equal(t, "hi", out)
+}
+
+func TestShellMultilineOutput(t *testing.T) {
+	var bash shell.Bash
+	defer bash.Close()
+
+	// Generate 100 text lines. Each line has 50 characters + '\n', so 5100
+	var text string
+	for i := 0; i < 100; i++ {
+		text += randomString(50) + "\n"
+	}
+
+	out, err := bash.Run("echo -n $'" + text + "'")
+	require.NoError(t, err)
+
+	// Bash deleted the last '\n', so 5099
+	require.Equal(t, 5099, len(out))
+
+	splits := strings.Split(out, "\n")
+	require.Equal(t, 100, len(splits))
+}
+
+func randomString(n int) string {
+	var letter = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
+
+	b := make([]rune, n)
+	for i := range b {
+		// #nosec
+		b[i] = letter[rand.Intn(len(letter))]
+	}
+	return string(b)
 }

@@ -26,6 +26,15 @@ import (
 	"sync"
 )
 
+const (
+	bufferSize  = 1 << 16
+	checkStatus = `if [ $? -eq 0 ]; then
+	echo OK
+else
+	echo FAILED
+fi`
+)
+
 // Bash is api for bash procces
 type Bash struct {
 	Dir       string
@@ -91,47 +100,52 @@ func (b *Bash) init() {
 	if err != nil {
 		panic(err.Error())
 	}
-	go func() {
-		for b.ctx.Err() == nil {
-			var buffer []byte = make([]byte, 1024)
-			n, err := stderr.Read(buffer)
-			if err != nil {
-				return
-			}
-			b.errCh <- errors.New(string(buffer[:n]))
-		}
-	}()
-	go func() {
-		var output string
-		for b.ctx.Err() == nil {
-			var buffer []byte = make([]byte, 1024)
-			n, err := stdout.Read(buffer)
-			if err != nil {
-				return
-			}
-			r := strings.TrimSpace(string(buffer[:n]))
-			if strings.HasSuffix(r, "OK") {
-				if len(r) > 2 {
-					output = r[:len(r)-len("\nOK")]
-				}
-				b.outCh <- output
-				output = ""
-				continue
-			}
-			if strings.HasSuffix(r, "FAILED") {
-				b.errCh <- errors.New("command has failed")
-				continue
-			}
-			output = r
-		}
-	}()
+
+	go b.stderrHandler(stderr)
+	go b.stdoutHandler(stdout)
 }
 
-const checkStatus = `if [ $? -eq 0 ]; then
-	echo OK
-else
-	echo FAILED
-fi`
+func (b *Bash) stderrHandler(stderr io.Reader) {
+	var buffer []byte = make([]byte, bufferSize)
+	for b.ctx.Err() == nil {
+		n, err := stderr.Read(buffer)
+		if err != nil {
+			return
+		}
+		b.errCh <- errors.New(string(buffer[:n]))
+	}
+}
+
+func (b *Bash) stdoutHandler(stdout io.Reader) {
+	var output string
+	var buffer []byte = make([]byte, bufferSize)
+	cur := 0
+	for b.ctx.Err() == nil {
+		n, err := stdout.Read(buffer[cur:])
+		if err != nil {
+			return
+		}
+		r := strings.TrimSpace(string(buffer[:cur+n]))
+		if strings.HasSuffix(r, "OK") {
+			if len(r) > 2 {
+				output = r[:len(r)-len("\nOK")]
+			}
+			b.outCh <- output
+			output = ""
+			cur = 0
+			continue
+		}
+		if strings.HasSuffix(r, "FAILED") {
+			b.errCh <- errors.New("command has failed")
+			cur = 0
+			continue
+		}
+		cur += n
+		if cur == bufferSize {
+			cur = 0
+		}
+	}
+}
 
 // Run runs the cmd. Returs stdout and stderror as a result.
 func (b *Bash) Run(s string) (output string, err error) {
