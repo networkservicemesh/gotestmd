@@ -45,6 +45,13 @@ func (s *Suite) Runner(dir string, env ...string) *Runner {
 	s.T().Cleanup(func() {
 		result.bash.Close()
 	})
+	result.logger = &logrus.Logger{
+		Out:   os.Stderr,
+		Level: logrus.DebugLevel,
+		Formatter: &logrus.TextFormatter{
+			DisableQuote: true,
+		},
+	}
 	return result
 }
 
@@ -69,8 +76,9 @@ func findRoot() string {
 
 // Runner is shell runner.
 type Runner struct {
-	t    *testing.T
-	bash Bash
+	t      *testing.T
+	logger *logrus.Logger
+	bash   Bash
 }
 
 // Dir returns the directory where located current runner intstance
@@ -86,15 +94,15 @@ func (r *Runner) Run(cmd string) {
 	var err error
 	var out string
 	for {
-		logrus.WithField(r.t.Name(), "stdin").Info(cmd)
+		r.logger.WithField(r.t.Name(), "stdin").Info(cmd)
 		out, err = r.bash.Run(cmd)
 		if out != "" {
-			logrus.WithField(r.t.Name(), "stdout").Info(out)
+			r.logger.WithField(r.t.Name(), "stdout").Info(out)
 		}
 		if err == nil {
 			return
 		}
-		logrus.WithField(r.t.Name(), "stderr").Info(err.Error())
+		r.logger.WithField(r.t.Name(), "stderr").Info(err.Error())
 		select {
 		case <-timeoutCh:
 			require.NoError(r.t, err)
