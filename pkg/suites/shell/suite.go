@@ -39,7 +39,10 @@ func (s *Suite) Runner(dir string, env ...string) *Runner {
 	result := &Runner{
 		t: s.T(),
 	}
-	b, err := bash.New(bash.WithDir(filepath.Join(findRoot(), dir)), bash.WithEnv(env))
+	if !filepath.IsAbs(dir) {
+		dir = filepath.Join(findRoot(), dir)
+	}
+	b, err := bash.New(bash.WithDir(dir), bash.WithEnv(env))
 	if err != nil {
 		s.FailNowf("can't initialize bash", "%v", err)
 	}

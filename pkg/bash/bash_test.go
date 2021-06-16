@@ -27,7 +27,7 @@ import (
 	bash2 "github.com/networkservicemesh/gotestmd/pkg/bash"
 )
 
-func TestShellProc(t *testing.T) {
+func TestBashProc(t *testing.T) {
 	runner, err := bash2.New()
 	require.NoError(t, err)
 	defer runner.Close()
@@ -57,7 +57,7 @@ func TestShellProc(t *testing.T) {
 	require.Contains(t, stderr, "command not found")
 }
 
-func TestShellWriteFile(t *testing.T) {
+func TestBashWriteFile(t *testing.T) {
 	runner, err := bash2.New()
 	require.NoError(t, err)
 	defer runner.Close()
@@ -84,7 +84,7 @@ EOF`)
 	_ = os.Remove("test")
 }
 
-func TestShellLongOperation(t *testing.T) {
+func TestBashLongOperation(t *testing.T) {
 	runner, err := bash2.New()
 	require.NoError(t, err)
 	defer runner.Close()
@@ -96,7 +96,7 @@ func TestShellLongOperation(t *testing.T) {
 	require.Empty(t, stderr)
 }
 
-func TestShellMultilineOutput(t *testing.T) {
+func TestBashMultilineOutput(t *testing.T) {
 	runner, err := bash2.New()
 	require.NoError(t, err)
 	defer runner.Close()
@@ -117,7 +117,7 @@ func TestShellMultilineOutput(t *testing.T) {
 	require.Equal(t, text[:len(text)-1], stdout)
 }
 
-func TestShellStderr(t *testing.T) {
+func TestBashStderr(t *testing.T) {
 	runner, err := bash2.New()
 	require.NoError(t, err)
 	defer runner.Close()
@@ -130,7 +130,7 @@ echo err >&2`)
 	require.Equal(t, "err", stderr)
 }
 
-func TestShellExitCode(t *testing.T) {
+func TestBashExitCode(t *testing.T) {
 	runner, err := bash2.New()
 	require.NoError(t, err)
 	defer runner.Close()
