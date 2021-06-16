@@ -20,7 +20,6 @@ import (
 	"io/ioutil"
 	"math/rand"
 	"os"
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -32,33 +31,53 @@ func TestShellProc(t *testing.T) {
 	var bash shell.Bash
 	defer bash.Close()
 
-	_, _, _, err := bash.Run("A=hello")
+	stdout, stderr, success, err := bash.Run("A=hello")
 	require.NoError(t, err)
+	require.True(t, success)
+	require.Empty(t, stdout)
+	require.Empty(t, stderr)
 
-	_, _, _, err = bash.Run("B=world")
+	stdout, stderr, success, err = bash.Run("B=world")
 	require.NoError(t, err)
+	require.True(t, success)
+	require.Empty(t, stdout)
+	require.Empty(t, stderr)
 
-	out, _, _, err := bash.Run("echo $A $B")
+	stdout, stderr, success, err = bash.Run("echo $A $B")
 	require.NoError(t, err)
-	require.Equal(t, "hello world", out)
+	require.True(t, success)
+	require.Equal(t, "hello world", stdout)
+	require.Empty(t, stderr)
 
-	_, _, success, err := bash.Run("abcdefg")
+	stdout, stderr, success, err = bash.Run("abcdefg")
 	require.NoError(t, err)
 	require.False(t, success)
+	require.Empty(t, stdout)
+	require.Contains(t, stderr, "command not found")
 }
 func TestShellWriteFile(t *testing.T) {
 	var bash shell.Bash
 	defer bash.Close()
 
-	_, _, _, err := bash.Run("NAMESPACE=ns-1")
+	envValue := "ns-1"
+
+	stdout, stderr, success, err := bash.Run("NAMESPACE=" + envValue)
 	require.NoError(t, err)
-	_, _, _, err = bash.Run(`cat > test <<EOF
+	require.True(t, success)
+	require.Empty(t, stdout)
+	require.Empty(t, stderr)
+
+	stdout, stderr, success, err = bash.Run(`cat > test <<EOF
 $NAMESPACE
 EOF`)
 	require.NoError(t, err)
+	require.True(t, success)
+	require.Empty(t, stdout)
+	require.Empty(t, stderr)
+
 	content, err := ioutil.ReadFile("test")
 	require.NoError(t, err)
-	require.Equal(t, "ns-1\n", string(content))
+	require.Equal(t, envValue+"\n", string(content))
 	_ = os.Remove("test")
 }
 
@@ -66,9 +85,11 @@ func TestShellLongOperation(t *testing.T) {
 	var bash shell.Bash
 	defer bash.Close()
 
-	out, _, _, err := bash.Run("sleep 1s; echo hi")
+	stdout, stderr, success, err := bash.Run("sleep 1s; echo hi")
 	require.NoError(t, err)
-	require.Equal(t, "hi", out)
+	require.True(t, success)
+	require.Equal(t, "hi", stdout)
+	require.Empty(t, stderr)
 }
 
 func TestShellMultilineOutput(t *testing.T) {
@@ -81,14 +102,26 @@ func TestShellMultilineOutput(t *testing.T) {
 		text += randomString(50) + "\n"
 	}
 
-	out, _, _, err := bash.Run("echo -n $'" + text + "'")
+	stdout, stderr, success, err := bash.Run("echo -n $'" + text + "'")
 	require.NoError(t, err)
+	require.True(t, success)
+	require.Empty(t, stderr)
 
-	// Bash deleted the last '\n', so 5099
-	require.Equal(t, 5099, len(out))
+	// Bash deleted the last '\n'
+	require.Equal(t, len(text)-1, len(stdout))
+	require.Equal(t, text[:len(text)-1], stdout)
+}
 
-	splits := strings.Split(out, "\n")
-	require.Equal(t, 100, len(splits))
+func TestShellStderr(t *testing.T) {
+	var bash shell.Bash
+	defer bash.Close()
+
+	stdout, stderr, success, err := bash.Run(`echo out
+echo err >&2`)
+	require.NoError(t, err)
+	require.True(t, success)
+	require.Equal(t, "out", stdout)
+	require.Equal(t, "err", stderr)
 }
 
 func randomString(n int) string {
