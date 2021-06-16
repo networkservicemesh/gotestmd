@@ -17,18 +17,18 @@
 package bash
 
 // Option is an option for the Runner
-type Option func(bash *bash)
+type Option func(bash *Bash)
 
 // WithDir sets the directory where the bash runner will be located
 func WithDir(dir string) Option {
-	return func(bash *bash) {
+	return func(bash *Bash) {
 		bash.dir = dir
 	}
 }
 
 // WithEnv sets env variables for the bash runner
 func WithEnv(env []string) Option {
-	return func(bash *bash) {
+	return func(bash *Bash) {
 		bash.env = env
 	}
 }

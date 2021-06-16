@@ -33,18 +33,8 @@ const (
 	cmdPrintStderrFinish = cmdPrintStdoutFinish + ` >&2`
 )
 
-// Runner is an exported interface for bash runner
-type Runner interface {
-	// Dir returns the directory where the runner instance is located
-	Dir() string
-	// Close closes the bash process and all resources used by it
-	Close()
-	// Run runs the cmd
-	Run(cmd string) (stdout, stderr string, exitCode int, err error)
-}
-
 // Bash is api for bash process
-type bash struct {
+type Bash struct {
 	dir       string
 	env       []string
 	resources []io.Closer
@@ -59,13 +49,13 @@ type bash struct {
 }
 
 // New creates a new bash runner and initializes it
-func New(options ...Option) (Runner, error) {
-	b := &bash{}
+func New(options ...Option) (*Bash, error) {
+	b := &Bash{}
 	for _, o := range options {
 		o(b)
 	}
 
-	err := b.init()
+	err := b.Init()
 	if err != nil {
 		return nil, err
 	}
@@ -73,8 +63,8 @@ func New(options ...Option) (Runner, error) {
 	return b, nil
 }
 
-// Close closes current bash process and all used resources
-func (b *bash) Close() {
+// Close closes current bash process and all the resources used by it
+func (b *Bash) Close() {
 	b.cancel()
 	_, err := b.stdin.Write([]byte("exit 0\n"))
 	if err != nil {
@@ -86,11 +76,17 @@ func (b *bash) Close() {
 	}
 }
 
-func (b *bash) Dir() string {
+// Dir returns the directory where the runner instance is located
+func (b *Bash) Dir() string {
 	return b.dir
 }
 
-func (b *bash) init() error {
+// Init initializes all resources for the bash runner.
+//
+// Must be called before any call to Run or Close
+//
+// You are advised to use bash.New instead, which calls this function automatically.
+func (b *Bash) Init() error {
 	b.ctx, b.cancel = context.WithCancel(context.Background())
 	b.stdoutCh = make(chan string)
 	b.stderrCh = make(chan string)
@@ -137,7 +133,7 @@ func (b *bash) init() error {
 	return nil
 }
 
-func (b *bash) extractMessagesFromPipe(pipe io.Reader, ch chan string) {
+func (b *Bash) extractMessagesFromPipe(pipe io.Reader, ch chan string) {
 	var buffer = make([]byte, initialBufferSize)
 	cur := 0
 	for b.ctx.Err() == nil {
@@ -163,8 +159,8 @@ func (b *bash) extractMessagesFromPipe(pipe io.Reader, ch chan string) {
 	}
 }
 
-// Run runs the cmd
-func (b *bash) Run(cmd string) (stdout, stderr string, exitCode int, err error) {
+// Run runs the command
+func (b *Bash) Run(cmd string) (stdout, stderr string, exitCode int, err error) {
 	if b.ctx.Err() != nil {
 		err = b.ctx.Err()
 		return

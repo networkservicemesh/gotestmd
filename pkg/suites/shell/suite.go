@@ -84,7 +84,7 @@ func findRoot() string {
 type Runner struct {
 	t      *testing.T
 	logger *logrus.Logger
-	bash   bash.Runner
+	bash   *bash.Bash
 }
 
 // Dir returns the directory where current runner instance is located
