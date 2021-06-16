@@ -34,12 +34,12 @@ func TestShellFirstTry(t *testing.T) {
 	r := suite.Runner(tempDir)
 
 	fileContent := "file content"
-	fileName := "run1.file"
+	fileName := "TestShellFirstTry.file"
 
-	r.Run("echo "+fileContent+" >" + fileName)
+	r.Run("echo " + fileContent + " >" + fileName)
 	bytes, err := os.ReadFile(filepath.Join(tempDir, fileName))
 	require.NoError(t, err)
-	require.Equal(t, fileContent + "\n", string(bytes))
+	require.Equal(t, fileContent+"\n", string(bytes))
 }
 
 func TestShellEventually(t *testing.T) {
@@ -49,7 +49,7 @@ func TestShellEventually(t *testing.T) {
 	suite.SetT(t)
 	r := suite.Runner(tempDir)
 
-	fileName := "run1.file"
+	fileName := "TestShellEventually.file"
 
 	r.Run("X=1")
 	r.Run(`if ! [[ $X == "1111" ]]; then

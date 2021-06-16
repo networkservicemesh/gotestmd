@@ -33,9 +33,13 @@ const (
 	cmdPrintStderrFinish = cmdPrintStdoutFinish + ` >&2`
 )
 
+// Runner is an exported interface for bash runner
 type Runner interface {
+	// Dir returns the directory where the runner instance is located
 	Dir() string
+	// Close closes the bash process and all resources used by it
 	Close()
+	// Run runs the cmd
 	Run(cmd string) (stdout, stderr string, exitCode int, err error)
 }
 
@@ -54,6 +58,7 @@ type bash struct {
 	stderrCh chan string
 }
 
+// New creates a new bash runner and initializes it
 func New(options ...Option) (Runner, error) {
 	b := &bash{}
 	for _, o := range options {
@@ -158,7 +163,7 @@ func (b *bash) extractMessagesFromPipe(pipe io.Reader, ch chan string) {
 	}
 }
 
-// Run runs the cmd. Returns stdout and stderr as a result.
+// Run runs the cmd
 func (b *bash) Run(cmd string) (stdout, stderr string, exitCode int, err error) {
 	if b.ctx.Err() != nil {
 		err = b.ctx.Err()
@@ -200,5 +205,5 @@ func (b *bash) Run(cmd string) (stdout, stderr string, exitCode int, err error) 
 	}
 	exitCode = int(exitCode64)
 
-	return
+	return stdout, stderr, exitCode, nil
 }

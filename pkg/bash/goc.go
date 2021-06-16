@@ -14,21 +14,5 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package bash provides bash command helpers
 package bash
-
-// Option is an option for the Runner
-type Option func(bash *bash)
-
-// WithDir sets the directory where the bash runner will be located
-func WithDir(dir string) Option {
-	return func(bash *bash) {
-		bash.dir = dir
-	}
-}
-
-// WithEnv sets env variables for the bash runner
-func WithEnv(env []string) Option {
-	return func(bash *bash) {
-		bash.env = env
-	}
-}
