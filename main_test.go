@@ -22,22 +22,25 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/networkservicemesh/gotestmd/pkg/suites/shell"
+	"github.com/networkservicemesh/gotestmd/pkg/bash"
 )
 
 func TestExamples(t *testing.T) {
 	t.Cleanup(func() {
 		_ = os.RemoveAll("test-examples")
 	})
-	var bash shell.Bash
-	defer bash.Close()
-	_, err := bash.Run("go install ./...")
+	runner, err := bash.New()
 	require.NoError(t, err)
-
-	_, err = bash.Run("gotestmd examples/ test-examples/")
+	defer runner.Close()
+	_, _, exitCode, err := runner.Run("go install ./...")
 	require.NoError(t, err)
+	require.Zero(t, exitCode)
 
-	_, err = bash.Run(`cat > test-examples/entry_point_test.go <<EOF
+	_, _, exitCode, err = runner.Run("gotestmd examples/ test-examples/")
+	require.NoError(t, err)
+	require.Zero(t, exitCode)
+
+	_, _, exitCode, err = runner.Run(`cat > test-examples/entry_point_test.go <<EOF
 package suites
 
 import (
@@ -59,7 +62,9 @@ func TestEntryPoint(t *testing.T) {
 EOF
 `)
 	require.NoError(t, err)
+	require.Zero(t, exitCode)
 
-	_, err = bash.Run("go test ./test-examples/... ")
+	_, _, exitCode, err = runner.Run("go test ./test-examples/... ")
 	require.NoError(t, err)
+	require.Zero(t, exitCode)
 }

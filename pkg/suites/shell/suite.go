@@ -26,22 +26,29 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
+
+	"github.com/networkservicemesh/gotestmd/pkg/bash"
 )
 
 // Suite is testify suite that provides a shell helper functions for each test.
-// For each test generates a unique folder.
-// Shell for each test located in the unique test folder.
 type Suite struct {
 	suite.Suite
 }
 
-// Runner creates runner and sets a passed dir and envs
+// Runner creates runner and sets the passed dir and envs
 func (s *Suite) Runner(dir string, env ...string) *Runner {
 	result := &Runner{
 		t: s.T(),
 	}
-	result.bash.Dir = filepath.Join(findRoot(), dir)
-	result.bash.Env = env
+	if !filepath.IsAbs(dir) {
+		dir = filepath.Join(findRoot(), dir)
+	}
+	b, err := bash.New(bash.WithDir(dir), bash.WithEnv(env))
+	if err != nil {
+		s.FailNowf("can't initialize bash", "%v", err)
+	}
+	result.bash = b
+
 	s.T().Cleanup(func() {
 		result.bash.Close()
 	})
@@ -78,34 +85,41 @@ func findRoot() string {
 type Runner struct {
 	t      *testing.T
 	logger *logrus.Logger
-	bash   Bash
+	bash   *bash.Bash
 }
 
-// Dir returns the directory where located current runner intstance
+// Dir returns the directory where current runner instance is located
 func (r *Runner) Dir() string {
-	return r.bash.Dir
+	return r.bash.Dir()
 }
 
-// Run runs cmd logs stdout, stderror, stdin
-// Tries to run cmd on fail during timeout.
-// Test could fail on the error or achieved cmd timeout.
+// Run runs cmd, logs stdin, stdout, stderr
+// Tries to run cmd several times, until it succeeds or timeout passes.
+//
+// Fails the test if the command can't be run successfully.
 func (r *Runner) Run(cmd string) {
 	timeoutCh := time.After(time.Minute)
-	var err error
-	var out string
 	for {
 		r.logger.WithField(r.t.Name(), "stdin").Info(cmd)
-		out, err = r.bash.Run(cmd)
-		if out != "" {
-			r.logger.WithField(r.t.Name(), "stdout").Info(out)
+		stdout, stderr, exitCode, err := r.bash.Run(cmd)
+		if err != nil {
+			r.logger.Fatalf("can't run command: %v", err)
+			r.t.FailNow()
 		}
-		if err == nil {
+		if stdout != "" {
+			r.logger.WithField(r.t.Name(), "stdout").Info(stdout)
+		}
+		if stderr != "" {
+			r.logger.WithField(r.t.Name(), "stderr").Info(stderr)
+		}
+		if exitCode == 0 {
 			return
 		}
-		r.logger.WithField(r.t.Name(), "stderr").Info(err.Error())
+		r.logger.WithField(r.t.Name(), "exitCode").Info(exitCode)
 		select {
 		case <-timeoutCh:
-			require.NoError(r.t, err)
+			r.logger.WithField("cmd", cmd).Error("command didn't succeed until timeout")
+			require.Equal(r.t, 0, exitCode)
 		default:
 			time.Sleep(time.Millisecond * 100)
 		}
