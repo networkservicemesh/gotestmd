@@ -21,6 +21,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"strconv"
 	"strings"
 	"sync"
 )
@@ -28,13 +29,9 @@ import (
 const (
 	bufferSize           = 1 << 16
 	finishMessage        = "gotestmd/pkg/suites/shell/Bash.const.finish"
+	cmdPrintStatusCode   = `echo -e \\n$?`
 	cmdPrintStdoutFinish = `echo ` + finishMessage
 	cmdPrintStderrFinish = cmdPrintStdoutFinish + ` >&2`
-	checkStatus          = `if [ $? -eq 0 ]; then
-	echo OK
-else
-	echo FAILED
-fi`
 )
 
 // Bash is api for bash process
@@ -136,7 +133,7 @@ func (b *Bash) extractMessagesFromPipe(pipe io.Reader, ch chan string) {
 }
 
 // Run runs the cmd. Returns stdout and stderr as a result.
-func (b *Bash) Run(s string) (stdout, stderr string, success bool, err error) {
+func (b *Bash) Run(s string) (stdout, stderr string, exitCode int, err error) {
 	b.once.Do(b.init)
 
 	if b.ctx.Err() != nil {
@@ -149,7 +146,7 @@ func (b *Bash) Run(s string) (stdout, stderr string, success bool, err error) {
 		return
 	}
 
-	_, err = b.stdin.Write([]byte(checkStatus + "\n"))
+	_, err = b.stdin.Write([]byte(cmdPrintStatusCode + "\n"))
 	if err != nil {
 		return
 	}
@@ -178,13 +175,21 @@ func (b *Bash) Run(s string) (stdout, stderr string, success bool, err error) {
 		return
 	}
 
-	if strings.HasSuffix(stdout, "OK") {
-		stdout = stdout[:len(stdout)-len("OK")]
-		success = true
+	lastLineBreak := strings.LastIndex(stdout, "\n")
+	var exitCodeString string
+	if lastLineBreak == -1 {
+		exitCodeString = stdout
+		stdout = ""
 	} else {
-		stdout = stdout[:len(stdout)-len("FAILED")]
+		exitCodeString = stdout[(lastLineBreak + 1):]
+		stdout = strings.TrimSpace(stdout[:lastLineBreak])
 	}
-	stdout = strings.TrimSpace(stdout)
+	var exitCode64 int64
+	exitCode64, err = strconv.ParseInt(exitCodeString, 0, 9)
+	if err != nil {
+		return
+	}
+	exitCode = int(exitCode64)
 
 	return
 }

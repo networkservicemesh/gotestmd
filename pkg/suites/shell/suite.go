@@ -92,7 +92,7 @@ func (r *Runner) Run(cmd string) {
 	timeoutCh := time.After(time.Minute)
 	for {
 		r.logger.WithField(r.t.Name(), "stdin").Info(cmd)
-		stdout, stderr, success, err := r.bash.Run(cmd)
+		stdout, stderr, exitCode, err := r.bash.Run(cmd)
 		if err != nil {
 			r.logger.Fatalf("can't run command: %v", err)
 			r.t.FailNow()
@@ -103,9 +103,10 @@ func (r *Runner) Run(cmd string) {
 		if stderr != "" {
 			r.logger.WithField(r.t.Name(), "stdout").Info(stderr)
 		}
-		if success {
+		if exitCode == 0 {
 			return
 		}
+		r.logger.WithField(r.t.Name(), "exitCode").Info(exitCode)
 		select {
 		case <-timeoutCh:
 			r.logger.WithField("cmd", cmd).Fatal("command didn't succeed until timeout")
