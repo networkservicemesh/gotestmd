@@ -14,7 +14,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package shell
+package bash
 
 import (
 	"context"
@@ -23,7 +23,6 @@ import (
 	"os/exec"
 	"strconv"
 	"strings"
-	"sync"
 )
 
 const (
@@ -34,11 +33,16 @@ const (
 	cmdPrintStderrFinish = cmdPrintStdoutFinish + ` >&2`
 )
 
+type Runner interface {
+	Dir() string
+	Close()
+	Run(cmd string) (stdout, stderr string, exitCode int, err error)
+}
+
 // Bash is api for bash process
-type Bash struct {
-	Dir       string
-	Env       []string
-	once      sync.Once
+type bash struct {
+	dir       string
+	env       []string
 	resources []io.Closer
 	ctx       context.Context
 	cancel    context.CancelFunc
@@ -50,65 +54,87 @@ type Bash struct {
 	stderrCh chan string
 }
 
+func New(options ...Option) (Runner, error) {
+	b := &bash{}
+	for _, o := range options {
+		o(b)
+	}
+
+	err := b.init()
+	if err != nil {
+		return nil, err
+	}
+
+	return b, nil
+}
+
 // Close closes current bash process and all used resources
-func (b *Bash) Close() {
-	b.once.Do(b.init)
+func (b *bash) Close() {
 	b.cancel()
-	_, _ = b.stdin.Write([]byte("exit 0\n"))
+	_, err := b.stdin.Write([]byte("exit 0\n"))
+	if err != nil {
+		panic(err)
+	}
 	_ = b.cmd.Wait()
 	for _, r := range b.resources {
 		_ = r.Close()
 	}
 }
 
-func (b *Bash) init() {
+func (b *bash) Dir() string {
+	return b.dir
+}
+
+func (b *bash) init() error {
 	b.ctx, b.cancel = context.WithCancel(context.Background())
 	b.stdoutCh = make(chan string)
 	b.stderrCh = make(chan string)
 	p, err := exec.LookPath("bash")
 	if err != nil {
-		panic(err.Error())
+		return err
 	}
-	if len(b.Env) == 0 {
-		b.Env = os.Environ()
+	if len(b.env) == 0 {
+		b.env = os.Environ()
 	}
 	b.cmd = &exec.Cmd{
-		Dir:  b.Dir,
-		Env:  b.Env,
+		Dir:  b.dir,
+		Env:  b.env,
 		Path: p,
 	}
 
 	stderr, err := b.cmd.StderrPipe()
 	if err != nil {
-		panic(err.Error())
+		return err
 	}
 	b.resources = append(b.resources, stderr)
 
 	stdin, err := b.cmd.StdinPipe()
 	if err != nil {
-		panic(err.Error())
+		return err
 	}
 	b.resources = append(b.resources, stdin)
 	b.stdin = stdin
 
 	stdout, err := b.cmd.StdoutPipe()
 	if err != nil {
-		panic(err.Error())
+		return err
 	}
 	b.resources = append(b.resources, stdout)
 
 	err = b.cmd.Start()
 	if err != nil {
-		panic(err.Error())
+		return err
 	}
 
 	go b.extractMessagesFromPipe(stdout, b.stdoutCh)
 	go b.extractMessagesFromPipe(stderr, b.stderrCh)
+
+	return nil
 }
 
-func (b *Bash) extractMessagesFromPipe(pipe io.Reader, ch chan string) {
+func (b *bash) extractMessagesFromPipe(pipe io.Reader, ch chan string) {
 	var output string
-	var buffer []byte = make([]byte, bufferSize)
+	var buffer = make([]byte, bufferSize)
 	cur := 0
 	for b.ctx.Err() == nil {
 		n, err := pipe.Read(buffer[cur:])
@@ -133,30 +159,13 @@ func (b *Bash) extractMessagesFromPipe(pipe io.Reader, ch chan string) {
 }
 
 // Run runs the cmd. Returns stdout and stderr as a result.
-func (b *Bash) Run(s string) (stdout, stderr string, exitCode int, err error) {
-	b.once.Do(b.init)
-
+func (b *bash) Run(cmd string) (stdout, stderr string, exitCode int, err error) {
 	if b.ctx.Err() != nil {
 		err = b.ctx.Err()
 		return
 	}
 
-	_, err = b.stdin.Write([]byte(s + "\n"))
-	if err != nil {
-		return
-	}
-
-	_, err = b.stdin.Write([]byte(cmdPrintStatusCode + "\n"))
-	if err != nil {
-		return
-	}
-
-	_, err = b.stdin.Write([]byte(cmdPrintStdoutFinish + "\n"))
-	if err != nil {
-		return
-	}
-
-	_, err = b.stdin.Write([]byte(cmdPrintStderrFinish + "\n"))
+	_, err = b.stdin.Write([]byte(cmd + "\n" + cmdPrintStatusCode + "\n" + cmdPrintStdoutFinish + "\n" + cmdPrintStderrFinish + "\n"))
 	if err != nil {
 		return
 	}

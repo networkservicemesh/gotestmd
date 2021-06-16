@@ -14,7 +14,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package shell_test
+package bash_test
 
 import (
 	"io/ioutil"
@@ -24,50 +24,53 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/networkservicemesh/gotestmd/pkg/suites/shell"
+	bash2 "github.com/networkservicemesh/gotestmd/pkg/bash"
 )
 
 func TestShellProc(t *testing.T) {
-	var bash shell.Bash
-	defer bash.Close()
+	runner, err := bash2.New()
+	require.NoError(t, err)
+	defer runner.Close()
 
-	stdout, stderr, exitCode, err := bash.Run("A=hello")
+	stdout, stderr, exitCode, err := runner.Run("A=hello")
 	require.NoError(t, err)
 	require.Zero(t, exitCode)
 	require.Empty(t, stdout)
 	require.Empty(t, stderr)
 
-	stdout, stderr, exitCode, err = bash.Run("B=world")
+	stdout, stderr, exitCode, err = runner.Run("B=world")
 	require.NoError(t, err)
 	require.Zero(t, exitCode)
 	require.Empty(t, stdout)
 	require.Empty(t, stderr)
 
-	stdout, stderr, exitCode, err = bash.Run("echo $A $B")
+	stdout, stderr, exitCode, err = runner.Run("echo $A $B")
 	require.NoError(t, err)
 	require.Zero(t, exitCode)
 	require.Equal(t, "hello world", stdout)
 	require.Empty(t, stderr)
 
-	stdout, stderr, exitCode, err = bash.Run("abcdefg")
+	stdout, stderr, exitCode, err = runner.Run("abcdefg")
 	require.NoError(t, err)
 	require.NotZero(t, exitCode)
 	require.Empty(t, stdout)
 	require.Contains(t, stderr, "command not found")
 }
+
 func TestShellWriteFile(t *testing.T) {
-	var bash shell.Bash
-	defer bash.Close()
+	runner, err := bash2.New()
+	require.NoError(t, err)
+	defer runner.Close()
 
 	envValue := "ns-1"
 
-	stdout, stderr, exitCode, err := bash.Run("NAMESPACE=" + envValue)
+	stdout, stderr, exitCode, err := runner.Run("NAMESPACE=" + envValue)
 	require.NoError(t, err)
 	require.Zero(t, exitCode)
 	require.Empty(t, stdout)
 	require.Empty(t, stderr)
 
-	stdout, stderr, exitCode, err = bash.Run(`cat > test <<EOF
+	stdout, stderr, exitCode, err = runner.Run(`cat > test <<EOF
 $NAMESPACE
 EOF`)
 	require.NoError(t, err)
@@ -82,10 +85,11 @@ EOF`)
 }
 
 func TestShellLongOperation(t *testing.T) {
-	var bash shell.Bash
-	defer bash.Close()
+	runner, err := bash2.New()
+	require.NoError(t, err)
+	defer runner.Close()
 
-	stdout, stderr, exitCode, err := bash.Run("sleep 1s; echo hi")
+	stdout, stderr, exitCode, err := runner.Run("sleep 1s; echo hi")
 	require.NoError(t, err)
 	require.Zero(t, exitCode)
 	require.Equal(t, "hi", stdout)
@@ -93,8 +97,9 @@ func TestShellLongOperation(t *testing.T) {
 }
 
 func TestShellMultilineOutput(t *testing.T) {
-	var bash shell.Bash
-	defer bash.Close()
+	runner, err := bash2.New()
+	require.NoError(t, err)
+	defer runner.Close()
 
 	// Generate 100 text lines. Each line has 50 characters + '\n', so 5100
 	var text string
@@ -102,21 +107,22 @@ func TestShellMultilineOutput(t *testing.T) {
 		text += randomString(50) + "\n"
 	}
 
-	stdout, stderr, exitCode, err := bash.Run("echo -n $'" + text + "'")
+	stdout, stderr, exitCode, err := runner.Run("echo -n $'" + text + "'")
 	require.NoError(t, err)
 	require.Zero(t, exitCode)
 	require.Empty(t, stderr)
 
-	// Bash deleted the last '\n'
+	// runner deleted the last '\n'
 	require.Equal(t, len(text)-1, len(stdout))
 	require.Equal(t, text[:len(text)-1], stdout)
 }
 
 func TestShellStderr(t *testing.T) {
-	var bash shell.Bash
-	defer bash.Close()
+	runner, err := bash2.New()
+	require.NoError(t, err)
+	defer runner.Close()
 
-	stdout, stderr, exitCode, err := bash.Run(`echo out
+	stdout, stderr, exitCode, err := runner.Run(`echo out
 echo err >&2`)
 	require.NoError(t, err)
 	require.Zero(t, exitCode)
@@ -125,10 +131,11 @@ echo err >&2`)
 }
 
 func TestShellExitCode(t *testing.T) {
-	var bash shell.Bash
-	defer bash.Close()
+	runner, err := bash2.New()
+	require.NoError(t, err)
+	defer runner.Close()
 
-	stdout, stderr, exitCode, err := bash.Run(`$(exit 42)`)
+	stdout, stderr, exitCode, err := runner.Run(`$(exit 42)`)
 	require.NoError(t, err)
 	require.Equal(t, 42, exitCode)
 	require.Empty(t, stdout)

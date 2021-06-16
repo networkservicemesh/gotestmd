@@ -25,10 +25,11 @@ import (
 
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/suite"
+
+	"github.com/networkservicemesh/gotestmd/pkg/bash"
 )
 
 // Suite is testify suite that provides a shell helper functions for each test.
-// Shell for each test is located in a unique generated test folder.
 type Suite struct {
 	suite.Suite
 }
@@ -38,8 +39,12 @@ func (s *Suite) Runner(dir string, env ...string) *Runner {
 	result := &Runner{
 		t: s.T(),
 	}
-	result.bash.Dir = filepath.Join(findRoot(), dir)
-	result.bash.Env = env
+	b, err := bash.New(bash.WithDir(filepath.Join(findRoot(), dir)), bash.WithEnv(env))
+	if err != nil {
+		s.FailNowf("can't initialize bash", "%v", err)
+	}
+	result.bash = b
+
 	s.T().Cleanup(func() {
 		result.bash.Close()
 	})
@@ -76,12 +81,12 @@ func findRoot() string {
 type Runner struct {
 	t      *testing.T
 	logger *logrus.Logger
-	bash   Bash
+	bash   bash.Runner
 }
 
 // Dir returns the directory where current runner instance is located
 func (r *Runner) Dir() string {
-	return r.bash.Dir
+	return r.bash.Dir()
 }
 
 // Run runs cmd, logs stdin, stdout, stderr

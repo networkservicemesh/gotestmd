@@ -22,14 +22,14 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/networkservicemesh/gotestmd/pkg/suites/shell"
+	bash2 "github.com/networkservicemesh/gotestmd/pkg/suites/shell/bash"
 )
 
 func TestExamples(t *testing.T) {
 	t.Cleanup(func() {
 		_ = os.RemoveAll("test-examples")
 	})
-	var bash shell.Bash
+	var bash bash2.Bash
 	defer bash.Close()
 	_, err := bash.Run("go install ./...")
 	require.NoError(t, err)
