@@ -29,13 +29,12 @@ import (
 )
 
 // Suite is testify suite that provides a shell helper functions for each test.
-// For each test generates a unique folder.
-// Shell for each test located in the unique test folder.
+// Shell for each test is located in a unique generated test folder.
 type Suite struct {
 	suite.Suite
 }
 
-// Runner creates runner and sets a passed dir and envs
+// Runner creates runner and sets the passed dir and envs
 func (s *Suite) Runner(dir string, env ...string) *Runner {
 	result := &Runner{
 		t: s.T(),
@@ -81,14 +80,15 @@ type Runner struct {
 	bash   Bash
 }
 
-// Dir returns the directory where located current runner intstance
+// Dir returns the directory where current runner instance is located
 func (r *Runner) Dir() string {
 	return r.bash.Dir
 }
 
-// Run runs cmd logs stdout, stderror, stdin
-// Tries to run cmd on fail during timeout.
-// Test could fail on the error or achieved cmd timeout.
+// Run runs cmd, logs stdin, stdout, stderr
+// Tries to run cmd several times, until it succeeds or timeout passes.
+//
+// Fails the test if the command can't be run successfully.
 func (r *Runner) Run(cmd string) {
 	timeoutCh := time.After(time.Minute)
 	var err error

@@ -35,7 +35,7 @@ else
 fi`
 )
 
-// Bash is api for bash procces
+// Bash is api for bash process
 type Bash struct {
 	Dir       string
 	Env       []string
@@ -49,7 +49,7 @@ type Bash struct {
 	cmd       *exec.Cmd
 }
 
-// Close closses current bash process and all used resources
+// Close closes current bash process and all used resources
 func (b *Bash) Close() {
 	b.once.Do(b.init)
 	b.cancel()
@@ -147,7 +147,7 @@ func (b *Bash) stdoutHandler(stdout io.Reader) {
 	}
 }
 
-// Run runs the cmd. Returs stdout and stderror as a result.
+// Run runs the cmd. Returns stdout and stderr as a result.
 func (b *Bash) Run(s string) (output string, err error) {
 	b.once.Do(b.init)
 
