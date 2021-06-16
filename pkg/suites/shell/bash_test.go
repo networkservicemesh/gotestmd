@@ -32,26 +32,27 @@ func TestShellProc(t *testing.T) {
 	var bash shell.Bash
 	defer bash.Close()
 
-	_, err := bash.Run("A=hello")
+	_, _, _, err := bash.Run("A=hello")
 	require.NoError(t, err)
 
-	_, err = bash.Run("B=world")
+	_, _, _, err = bash.Run("B=world")
 	require.NoError(t, err)
 
-	out, err := bash.Run("echo $A $B")
+	out, _, _, err := bash.Run("echo $A $B")
 	require.NoError(t, err)
 	require.Equal(t, "hello world", out)
 
-	_, err = bash.Run("abcdefg")
-	require.Error(t, err)
+	_, _, success, err := bash.Run("abcdefg")
+	require.NoError(t, err)
+	require.False(t, success)
 }
 func TestShellWriteFile(t *testing.T) {
 	var bash shell.Bash
 	defer bash.Close()
 
-	_, err := bash.Run("NAMESPACE=ns-1")
+	_, _, _, err := bash.Run("NAMESPACE=ns-1")
 	require.NoError(t, err)
-	_, err = bash.Run(`cat > test <<EOF
+	_, _, _, err = bash.Run(`cat > test <<EOF
 $NAMESPACE
 EOF`)
 	require.NoError(t, err)
@@ -65,7 +66,7 @@ func TestShellLongOperation(t *testing.T) {
 	var bash shell.Bash
 	defer bash.Close()
 
-	out, err := bash.Run("sleep 1s; echo hi")
+	out, _, _, err := bash.Run("sleep 1s; echo hi")
 	require.NoError(t, err)
 	require.Equal(t, "hi", out)
 }
@@ -80,7 +81,7 @@ func TestShellMultilineOutput(t *testing.T) {
 		text += randomString(50) + "\n"
 	}
 
-	out, err := bash.Run("echo -n $'" + text + "'")
+	out, _, _, err := bash.Run("echo -n $'" + text + "'")
 	require.NoError(t, err)
 
 	// Bash deleted the last '\n', so 5099

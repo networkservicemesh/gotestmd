@@ -23,8 +23,6 @@ import (
 	"os/exec"
 	"strings"
 	"sync"
-
-	"github.com/pkg/errors"
 )
 
 const (
@@ -138,48 +136,48 @@ func (b *Bash) extractMessagesFromPipe(pipe io.Reader, ch chan string) {
 }
 
 // Run runs the cmd. Returns stdout and stderr as a result.
-func (b *Bash) Run(s string) (output string, err error) {
+func (b *Bash) Run(s string) (stdout, stderr string, success bool, err error) {
 	b.once.Do(b.init)
 
 	if b.ctx.Err() != nil {
-		return "", b.ctx.Err()
+		err = b.ctx.Err()
+		return
 	}
 
 	_, err = b.stdin.Write([]byte(s + "\n"))
 	if err != nil {
-		return "", err
+		return
 	}
 
 	_, err = b.stdin.Write([]byte(checkStatus + "\n"))
 	if err != nil {
-		return "", err
+		return
 	}
 
 	_, err = b.stdin.Write([]byte(cmdPrintStdoutFinish + "\n"))
 	if err != nil {
-		return "", err
+		return
 	}
 
 	_, err = b.stdin.Write([]byte(cmdPrintStderrFinish + "\n"))
 	if err != nil {
-		return "", err
+		return
 	}
 
-	var stdout string
 	select {
 	case stdout = <-b.stdoutCh:
 	case <-b.ctx.Done():
-		return "", b.ctx.Err()
+		err = b.ctx.Err()
+		return
 	}
 
-	var stderr string
 	select {
 	case stderr = <-b.stderrCh:
 	case <-b.ctx.Done():
-		return "", b.ctx.Err()
+		err = b.ctx.Err()
+		return
 	}
 
-	var success bool
 	if strings.HasSuffix(stdout, "OK") {
 		stdout = stdout[:len(stdout)-len("OK")]
 		success = true
@@ -188,11 +186,5 @@ func (b *Bash) Run(s string) (output string, err error) {
 	}
 	stdout = strings.TrimSpace(stdout)
 
-	if !success {
-		return "", errors.New("command failed")
-	}
-	if stderr != "" {
-		return stdout, errors.New(stderr)
-	}
-	return stdout, nil
+	return
 }

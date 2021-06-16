@@ -24,7 +24,6 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
-	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -91,21 +90,26 @@ func (r *Runner) Dir() string {
 // Fails the test if the command can't be run successfully.
 func (r *Runner) Run(cmd string) {
 	timeoutCh := time.After(time.Minute)
-	var err error
-	var out string
 	for {
 		r.logger.WithField(r.t.Name(), "stdin").Info(cmd)
-		out, err = r.bash.Run(cmd)
-		if out != "" {
-			r.logger.WithField(r.t.Name(), "stdout").Info(out)
+		stdout, stderr, success, err := r.bash.Run(cmd)
+		if err != nil {
+			r.logger.Fatalf("can't run command: %v", err)
+			r.t.FailNow()
 		}
-		if err == nil {
+		if stdout != "" {
+			r.logger.WithField(r.t.Name(), "stdout").Info(stdout)
+		}
+		if stderr != "" {
+			r.logger.WithField(r.t.Name(), "stdout").Info(stderr)
+		}
+		if success {
 			return
 		}
-		r.logger.WithField(r.t.Name(), "stderr").Info(err.Error())
 		select {
 		case <-timeoutCh:
-			require.NoError(r.t, err)
+			r.logger.WithField("cmd", cmd).Fatal("command didn't succeed until timeout")
+			r.t.FailNow()
 		default:
 			time.Sleep(time.Millisecond * 100)
 		}
