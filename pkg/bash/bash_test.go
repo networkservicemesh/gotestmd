@@ -24,11 +24,11 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	bash2 "github.com/networkservicemesh/gotestmd/pkg/bash"
+	"github.com/networkservicemesh/gotestmd/pkg/bash"
 )
 
 func TestBashProc(t *testing.T) {
-	runner, err := bash2.New()
+	runner, err := bash.New()
 	require.NoError(t, err)
 	defer runner.Close()
 
@@ -58,7 +58,7 @@ func TestBashProc(t *testing.T) {
 }
 
 func TestBashWriteFile(t *testing.T) {
-	runner, err := bash2.New()
+	runner, err := bash.New()
 	require.NoError(t, err)
 	defer runner.Close()
 
@@ -85,7 +85,7 @@ EOF`)
 }
 
 func TestBashLongOperation(t *testing.T) {
-	runner, err := bash2.New()
+	runner, err := bash.New()
 	require.NoError(t, err)
 	defer runner.Close()
 
@@ -97,11 +97,10 @@ func TestBashLongOperation(t *testing.T) {
 }
 
 func TestBashMultilineOutput(t *testing.T) {
-	runner, err := bash2.New()
+	runner, err := bash.New()
 	require.NoError(t, err)
 	defer runner.Close()
 
-	// Generate 100 text lines. Each line has 50 characters + '\n', so 5100
 	var text string
 	for i := 0; i < 100; i++ {
 		text += randomString(50) + "\n"
@@ -118,7 +117,7 @@ func TestBashMultilineOutput(t *testing.T) {
 }
 
 func TestBashStderr(t *testing.T) {
-	runner, err := bash2.New()
+	runner, err := bash.New()
 	require.NoError(t, err)
 	defer runner.Close()
 
@@ -131,7 +130,7 @@ echo err >&2`)
 }
 
 func TestBashExitCode(t *testing.T) {
-	runner, err := bash2.New()
+	runner, err := bash.New()
 	require.NoError(t, err)
 	defer runner.Close()
 
