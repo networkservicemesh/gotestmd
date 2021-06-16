@@ -18,17 +18,21 @@ package shell
 
 import (
 	"context"
-	"errors"
 	"io"
 	"os"
 	"os/exec"
 	"strings"
 	"sync"
+
+	"github.com/pkg/errors"
 )
 
 const (
-	bufferSize  = 1 << 16
-	checkStatus = `if [ $? -eq 0 ]; then
+	bufferSize           = 1 << 16
+	finishMessage        = "gotestmd/pkg/suites/shell/Bash.const.finish"
+	cmdPrintStdoutFinish = `echo ` + finishMessage
+	cmdPrintStderrFinish = cmdPrintStdoutFinish + ` >&2`
+	checkStatus          = `if [ $? -eq 0 ]; then
 	echo OK
 else
 	echo FAILED
@@ -39,14 +43,16 @@ fi`
 type Bash struct {
 	Dir       string
 	Env       []string
-	errCh     chan error
 	once      sync.Once
 	resources []io.Closer
-	stdin     io.Writer
-	outCh     chan string
 	ctx       context.Context
 	cancel    context.CancelFunc
-	cmd       *exec.Cmd
+
+	cmd *exec.Cmd
+
+	stdin    io.Writer
+	stdoutCh chan string
+	stderrCh chan string
 }
 
 // Close closes current bash process and all used resources
@@ -62,8 +68,8 @@ func (b *Bash) Close() {
 
 func (b *Bash) init() {
 	b.ctx, b.cancel = context.WithCancel(context.Background())
-	b.errCh = make(chan error)
-	b.outCh = make(chan string)
+	b.stdoutCh = make(chan string)
+	b.stderrCh = make(chan string)
 	p, err := exec.LookPath("bash")
 	if err != nil {
 		panic(err.Error())
@@ -101,42 +107,26 @@ func (b *Bash) init() {
 		panic(err.Error())
 	}
 
-	go b.stderrHandler(stderr)
-	go b.stdoutHandler(stdout)
+	go b.extractMessagesFromPipe(stdout, b.stdoutCh)
+	go b.extractMessagesFromPipe(stderr, b.stderrCh)
 }
 
-func (b *Bash) stderrHandler(stderr io.Reader) {
-	var buffer []byte = make([]byte, bufferSize)
-	for b.ctx.Err() == nil {
-		n, err := stderr.Read(buffer)
-		if err != nil {
-			return
-		}
-		b.errCh <- errors.New(string(buffer[:n]))
-	}
-}
-
-func (b *Bash) stdoutHandler(stdout io.Reader) {
+func (b *Bash) extractMessagesFromPipe(pipe io.Reader, ch chan string) {
 	var output string
 	var buffer []byte = make([]byte, bufferSize)
 	cur := 0
 	for b.ctx.Err() == nil {
-		n, err := stdout.Read(buffer[cur:])
+		n, err := pipe.Read(buffer[cur:])
 		if err != nil {
 			return
 		}
 		r := strings.TrimSpace(string(buffer[:cur+n]))
-		if strings.HasSuffix(r, "OK") {
-			if len(r) > 2 {
-				output = r[:len(r)-len("\nOK")]
+		if strings.HasSuffix(r, finishMessage) {
+			if len(r) >= len("\n"+finishMessage) {
+				output = r[:len(r)-len("\n"+finishMessage)]
 			}
-			b.outCh <- output
+			ch <- output
 			output = ""
-			cur = 0
-			continue
-		}
-		if strings.HasSuffix(r, "FAILED") {
-			b.errCh <- errors.New("command has failed")
 			cur = 0
 			continue
 		}
@@ -165,12 +155,44 @@ func (b *Bash) Run(s string) (output string, err error) {
 		return "", err
 	}
 
-	select {
-	case err = <-b.errCh:
+	_, err = b.stdin.Write([]byte(cmdPrintStdoutFinish + "\n"))
+	if err != nil {
 		return "", err
-	case output = <-b.outCh:
-		return output, nil
+	}
+
+	_, err = b.stdin.Write([]byte(cmdPrintStderrFinish + "\n"))
+	if err != nil {
+		return "", err
+	}
+
+	var stdout string
+	select {
+	case stdout = <-b.stdoutCh:
 	case <-b.ctx.Done():
 		return "", b.ctx.Err()
 	}
+
+	var stderr string
+	select {
+	case stderr = <-b.stderrCh:
+	case <-b.ctx.Done():
+		return "", b.ctx.Err()
+	}
+
+	var success bool
+	if strings.HasSuffix(stdout, "OK") {
+		stdout = stdout[:len(stdout)-len("OK")]
+		success = true
+	} else {
+		stdout = stdout[:len(stdout)-len("FAILED")]
+	}
+	stdout = strings.TrimSpace(stdout)
+
+	if !success {
+		return "", errors.New("command failed")
+	}
+	if stderr != "" {
+		return stdout, errors.New(stderr)
+	}
+	return stdout, nil
 }
