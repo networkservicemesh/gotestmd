@@ -26,7 +26,7 @@ import (
 )
 
 const (
-	bufferSize           = 1 << 16
+	initialBufferSize    = 1 << 10
 	finishMessage        = "gotestmd/pkg/suites/shell/Bash.const.finish"
 	cmdPrintStatusCode   = `echo -e \\n$?`
 	cmdPrintStdoutFinish = `echo ` + finishMessage
@@ -133,27 +133,27 @@ func (b *bash) init() error {
 }
 
 func (b *bash) extractMessagesFromPipe(pipe io.Reader, ch chan string) {
-	var output string
-	var buffer = make([]byte, bufferSize)
+	var buffer = make([]byte, initialBufferSize)
 	cur := 0
 	for b.ctx.Err() == nil {
 		n, err := pipe.Read(buffer[cur:])
 		if err != nil {
 			return
 		}
-		r := strings.TrimSpace(string(buffer[:cur+n]))
+		cur += n
+		r := strings.TrimSpace(string(buffer[:cur]))
 		if strings.HasSuffix(r, finishMessage) {
-			if len(r) >= len("\n"+finishMessage) {
-				output = r[:len(r)-len("\n"+finishMessage)]
+			if len(r) >= len(finishMessage) {
+				r = strings.TrimSpace(r[:len(r)-len(finishMessage)])
 			}
-			ch <- output
-			output = ""
+			ch <- r
 			cur = 0
 			continue
 		}
-		cur += n
-		if cur == bufferSize {
-			cur = 0
+		if cur == len(buffer) {
+			oldBuffer := buffer
+			buffer = make([]byte, len(oldBuffer)*2)
+			copy(buffer, oldBuffer)
 		}
 	}
 }

@@ -55,6 +55,7 @@ func TestShellEventually(t *testing.T) {
 	r.Run(`if ! [[ $X == "1111" ]]; then
 	echo $X >>` + fileName + `
 	X=${X}1
+	echo >&2 not enough ones
 	false
 fi`)
 	bytes, err := os.ReadFile(filepath.Join(tempDir, fileName))
