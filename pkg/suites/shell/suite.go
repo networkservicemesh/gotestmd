@@ -110,7 +110,7 @@ func (r *Runner) Run(cmd string) {
 			r.logger.WithField(r.t.Name(), "stdout").Info(stdout)
 		}
 		if stderr != "" {
-			r.logger.WithField(r.t.Name(), "stdout").Info(stderr)
+			r.logger.WithField(r.t.Name(), "stderr").Info(stderr)
 		}
 		if exitCode == 0 {
 			return
