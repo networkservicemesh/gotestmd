@@ -24,6 +24,7 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
+	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 
 	"github.com/networkservicemesh/gotestmd/pkg/bash"
@@ -117,8 +118,8 @@ func (r *Runner) Run(cmd string) {
 		r.logger.WithField(r.t.Name(), "exitCode").Info(exitCode)
 		select {
 		case <-timeoutCh:
-			r.logger.WithField("cmd", cmd).Fatal("command didn't succeed until timeout")
-			r.t.FailNow()
+			r.logger.WithField("cmd", cmd).Error("command didn't succeed until timeout")
+			require.Equal(r.t, 0, exitCode)
 		default:
 			time.Sleep(time.Millisecond * 100)
 		}
