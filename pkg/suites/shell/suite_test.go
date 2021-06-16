@@ -22,11 +22,14 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"go.uber.org/goleak"
 
 	"github.com/networkservicemesh/gotestmd/pkg/suites/shell"
 )
 
 func TestShellFirstTry(t *testing.T) {
+	t.Cleanup(func() { goleak.VerifyNone(t) })
+
 	tempDir := t.TempDir()
 
 	suite := shell.Suite{}
@@ -43,6 +46,8 @@ func TestShellFirstTry(t *testing.T) {
 }
 
 func TestShellEventually(t *testing.T) {
+	t.Cleanup(func() { goleak.VerifyNone(t) })
+
 	tempDir := t.TempDir()
 
 	suite := shell.Suite{}

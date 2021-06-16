@@ -147,7 +147,11 @@ func (b *Bash) extractMessagesFromPipe(pipe io.Reader, ch chan string) {
 			if len(r) >= len(finishMessage) {
 				r = strings.TrimSpace(r[:len(r)-len(finishMessage)])
 			}
-			ch <- r
+			select {
+			case ch <- r:
+			case <-b.ctx.Done():
+				return
+			}
 			cur = 0
 			continue
 		}

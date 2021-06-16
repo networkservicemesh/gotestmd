@@ -23,11 +23,14 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"go.uber.org/goleak"
 
 	"github.com/networkservicemesh/gotestmd/pkg/bash"
 )
 
 func TestBashProc(t *testing.T) {
+	t.Cleanup(func() { goleak.VerifyNone(t) })
+
 	runner, err := bash.New()
 	require.NoError(t, err)
 	defer runner.Close()
@@ -58,6 +61,8 @@ func TestBashProc(t *testing.T) {
 }
 
 func TestBashWriteFile(t *testing.T) {
+	t.Cleanup(func() { goleak.VerifyNone(t) })
+
 	runner, err := bash.New()
 	require.NoError(t, err)
 	defer runner.Close()
@@ -85,6 +90,8 @@ EOF`)
 }
 
 func TestBashLongOperation(t *testing.T) {
+	t.Cleanup(func() { goleak.VerifyNone(t) })
+
 	runner, err := bash.New()
 	require.NoError(t, err)
 	defer runner.Close()
@@ -97,6 +104,8 @@ func TestBashLongOperation(t *testing.T) {
 }
 
 func TestBashMultilineOutput(t *testing.T) {
+	t.Cleanup(func() { goleak.VerifyNone(t) })
+
 	runner, err := bash.New()
 	require.NoError(t, err)
 	defer runner.Close()
@@ -117,6 +126,8 @@ func TestBashMultilineOutput(t *testing.T) {
 }
 
 func TestBashStderr(t *testing.T) {
+	t.Cleanup(func() { goleak.VerifyNone(t) })
+
 	runner, err := bash.New()
 	require.NoError(t, err)
 	defer runner.Close()
@@ -130,6 +141,8 @@ echo err >&2`)
 }
 
 func TestBashExitCode(t *testing.T) {
+	t.Cleanup(func() { goleak.VerifyNone(t) })
+
 	runner, err := bash.New()
 	require.NoError(t, err)
 	defer runner.Close()
