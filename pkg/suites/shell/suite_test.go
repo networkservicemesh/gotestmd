@@ -18,7 +18,6 @@ package shell_test
 
 import (
 	"os"
-	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -30,17 +29,15 @@ import (
 func TestShellFirstTry(t *testing.T) {
 	t.Cleanup(func() { goleak.VerifyNone(t) })
 
-	tempDir := t.TempDir()
-
 	suite := shell.Suite{}
 	suite.SetT(t)
-	r := suite.Runner(tempDir)
+	r := suite.Runner()
 
 	fileContent := "file content"
 	fileName := "TestShellFirstTry.file"
 
 	r.Run("echo " + fileContent + " >" + fileName)
-	bytes, err := os.ReadFile(filepath.Join(tempDir, fileName))
+	bytes, err := os.ReadFile(fileName)
 	require.NoError(t, err)
 	require.Equal(t, fileContent+"\n", string(bytes))
 }
@@ -48,11 +45,9 @@ func TestShellFirstTry(t *testing.T) {
 func TestShellEventually(t *testing.T) {
 	t.Cleanup(func() { goleak.VerifyNone(t) })
 
-	tempDir := t.TempDir()
-
 	suite := shell.Suite{}
 	suite.SetT(t)
-	r := suite.Runner(tempDir)
+	r := suite.Runner()
 
 	fileName := "TestShellEventually.file"
 
@@ -63,7 +58,7 @@ func TestShellEventually(t *testing.T) {
 	echo >&2 not enough ones
 	false
 fi`)
-	bytes, err := os.ReadFile(filepath.Join(tempDir, fileName))
+	bytes, err := os.ReadFile(fileName)
 	require.NoError(t, err)
 	require.Equal(t, "1\n11\n111\n", string(bytes))
 }

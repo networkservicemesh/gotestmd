@@ -41,14 +41,11 @@ type Suite struct {
 }
 
 // Runner creates runner and sets the passed dir and envs
-func (s *Suite) Runner(dir string, env ...string) *Runner {
+func (s *Suite) Runner(env ...string) *Runner {
 	result := &Runner{
 		t: s.T(),
 	}
-	if !filepath.IsAbs(dir) {
-		dir = filepath.Join(findRoot(), dir)
-	}
-	b, err := bash.New(bash.WithDir(dir), bash.WithEnv(env))
+	b, err := bash.New(bash.WithEnv(env))
 	if err != nil {
 		s.FailNowf("can't initialize bash", "%v", err)
 	}
@@ -94,11 +91,6 @@ type Runner struct {
 	t      *testing.T
 	logger *logrus.Logger
 	bash   *bash.Bash
-}
-
-// Dir returns the directory where current runner instance is located
-func (r *Runner) Dir() string {
-	return r.bash.Dir()
 }
 
 // Run runs cmd, logs stdin, stdout, stderr

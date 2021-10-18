@@ -131,7 +131,7 @@ linters:
     # - rowserrcheck
     - goheader
     - bodyclose
-    - deadcode
+    # - deadcode
     - depguard
     - dogsled
     - dupl

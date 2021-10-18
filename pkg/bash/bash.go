@@ -35,7 +35,6 @@ const (
 
 // Bash is api for bash process
 type Bash struct {
-	dir       string
 	env       []string
 	resources []io.Closer
 	ctx       context.Context
@@ -76,11 +75,6 @@ func (b *Bash) Close() {
 	}
 }
 
-// Dir returns the directory where the runner instance is located
-func (b *Bash) Dir() string {
-	return b.dir
-}
-
 // Init initializes all resources for the bash runner.
 //
 // Must be called before any call to Run or Close
@@ -98,7 +92,6 @@ func (b *Bash) Init() error {
 		b.env = os.Environ()
 	}
 	b.cmd = &exec.Cmd{
-		Dir:  b.dir,
 		Env:  b.env,
 		Path: p,
 	}
