@@ -37,7 +37,7 @@ type Suite struct {
 func (s *Suite) SetupSuite() {
 	{{ .Setup }}
 	{{ if or .Run .Cleanup }}
-	r := s.Runner("{{.Dir}}")
+	r := s.Runner()
 	{{ end }}
 	{{ .Cleanup }}
 	{{ .Run }}
