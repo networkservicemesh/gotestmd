@@ -18,8 +18,10 @@
 package shell
 
 import (
+	"flag"
 	"os"
 	"path/filepath"
+	"sync"
 	"testing"
 	"time"
 
@@ -29,6 +31,9 @@ import (
 
 	"github.com/networkservicemesh/gotestmd/pkg/bash"
 )
+
+var timeoutFlag = flag.Duration("timeout", time.Minute, "timeout for command execution. Usage: set timeout in duratiom format via shell.timeout flag")
+var once sync.Once
 
 // Suite is testify suite that provides a shell helper functions for each test.
 type Suite struct {
@@ -59,6 +64,9 @@ func (s *Suite) Runner(dir string, env ...string) *Runner {
 			DisableQuote: true,
 		},
 	}
+	once.Do(func() {
+		flag.Parse()
+	})
 	return result
 }
 
@@ -98,7 +106,7 @@ func (r *Runner) Dir() string {
 //
 // Fails the test if the command can't be run successfully.
 func (r *Runner) Run(cmd string) {
-	timeoutCh := time.After(time.Minute)
+	timeoutCh := time.After(*timeoutFlag)
 	for {
 		r.logger.WithField(r.t.Name(), "stdin").Info(cmd)
 		stdout, stderr, exitCode, err := r.bash.Run(cmd)
