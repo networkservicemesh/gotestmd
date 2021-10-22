@@ -19,6 +19,7 @@ package bash
 import (
 	"context"
 	"io"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"strconv"
@@ -35,6 +36,7 @@ const (
 
 // Bash is api for bash process
 type Bash struct {
+	dir       string
 	env       []string
 	resources []io.Closer
 	ctx       context.Context
@@ -64,6 +66,8 @@ func New(options ...Option) (*Bash, error) {
 
 // Close closes current bash process and all the resources used by it
 func (b *Bash) Close() {
+	_ = os.RemoveAll(b.dir)
+
 	b.cancel()
 	_, err := b.stdin.Write([]byte("exit 0\n"))
 	if err != nil {
@@ -91,7 +95,15 @@ func (b *Bash) Init() error {
 	if len(b.env) == 0 {
 		b.env = os.Environ()
 	}
+
+	tempDir, err := ioutil.TempDir("tmp", "nsm")
+	if err != nil {
+		tempDir = ""
+	}
+
+	b.dir = tempDir
 	b.cmd = &exec.Cmd{
+		Dir:  tempDir,
 		Env:  b.env,
 		Path: p,
 	}

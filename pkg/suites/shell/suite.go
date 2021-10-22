@@ -67,6 +67,7 @@ func (s *Suite) Runner(env ...string) *Runner {
 	return result
 }
 
+// nolint:deadcode
 func findRoot() string {
 	wd, err := os.Getwd()
 	if err != nil {
