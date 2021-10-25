@@ -96,7 +96,7 @@ func (b *Bash) Init() error {
 		b.env = os.Environ()
 	}
 
-	tempDir, err := ioutil.TempDir("tmp", "nsm")
+	tempDir, err := ioutil.TempDir("tmp", "")
 	if err != nil {
 		tempDir = ""
 	}

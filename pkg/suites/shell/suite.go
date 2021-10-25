@@ -20,7 +20,6 @@ package shell
 import (
 	"flag"
 	"os"
-	"path/filepath"
 	"sync"
 	"testing"
 	"time"
@@ -65,26 +64,6 @@ func (s *Suite) Runner(env ...string) *Runner {
 		flag.Parse()
 	})
 	return result
-}
-
-// nolint:deadcode
-func findRoot() string {
-	wd, err := os.Getwd()
-	if err != nil {
-		logrus.Fatal(err.Error())
-	}
-	currDir := wd
-	for len(currDir) > 0 {
-		if err != nil {
-			logrus.Fatal(err.Error())
-		}
-		p := filepath.Clean(filepath.Join(currDir, "go.mod"))
-		if _, err := os.Open(p); err == nil {
-			return currDir
-		}
-		currDir = filepath.Dir(currDir)
-	}
-	return ""
 }
 
 // Runner is shell runner.
