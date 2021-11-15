@@ -32,7 +32,7 @@ import (
 	"github.com/networkservicemesh/gotestmd/pkg/bash"
 )
 
-var timeoutFlag = flag.Duration("timeout", time.Minute, "timeout for command execution. Usage: set timeout in duratiom format via shell.timeout flag")
+var timeoutFlag = flag.Duration("gotestmd.t", time.Minute, "timeout for command execution. Usage: set timeout in duratiom format via shell.timeout flag")
 var once sync.Once
 
 // Suite is testify suite that provides a shell helper functions for each test.
