@@ -75,9 +75,7 @@ func (s *Suite) SetupSuite() {
 }
 func (s *Suite) RunIncludedSuites() {
 	s.Run("SubTree", func() {
-		s.subtreeSuite.SetT(s.T())
-		s.subtreeSuite.SetupSuite()
-		s.subtreeSuite.Run("TestLeafB", s.subtreeSuite.TestLeafB)
+		suite.Run(s.T(), &s.subtreeSuite)
 	})
 }
 func (s *Suite) TestLeafA() {
