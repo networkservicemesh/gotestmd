@@ -1,4 +1,6 @@
-// Copyright (c) 2020-2021 Doc.ai and/or its affiliates.
+// Copyright (c) 2020-2022 Doc.ai and/or its affiliates.
+//
+// Copyright (c) 2022 Cisco and/or its affiliates.
 //
 // SPDX-License-Identifier: Apache-2.0
 //
@@ -53,41 +55,9 @@ func (s *Suite) RunIncludedSuites() {
 `
 
 const includedSuiteTemplate = `
-	runTest := func(subSuite suite.TestingSuite, suiteName, testName string, subtest func()) {
-		type runner interface {
-			Run(name string, f func()) bool
-		}
-
-		defer func() {
-			if afterTestSuite, ok := subSuite.(suite.AfterTest); ok {
-				afterTestSuite.AfterTest(suiteName, testName)
-			}
-
-			if tearDownTestSuite, ok := subSuite.(suite.TearDownTestSuite); ok {
-				tearDownTestSuite.TearDownTest()
-			}
-		}()
-
-		if setupTestSuite, ok := subSuite.(suite.SetupTestSuite); ok {
-			setupTestSuite.SetupTest()
-		}
-		if beforeTestSuite, ok := subSuite.(suite.BeforeTest); ok {
-			beforeTestSuite.BeforeTest(suiteName, testName)
-		}
-
-		// Run test
-		subSuite.(runner).Run(testName, subtest)
-	}
-
 	{{ range .Suites }}
 		s.Run("{{ .Title }}", func() {
-			{{ $suiteName := .Name }}
-			{{ $suiteTitle := .Title }}
-			s.{{ $suiteName }}Suite.SetT(s.T())
-			s.{{ $suiteName }}Suite.SetupSuite()
-			{{ range .Tests }}
-				runTest(&s.{{ $suiteName }}Suite, "{{ $suiteTitle }}", "Test{{ . }}", s.{{ $suiteName }}Suite.Test{{ . }})
-			{{ end }}
+			suite.Run(s.T(), &s.{{ .Name }}Suite)
 		})
 	{{ end }}
 `
@@ -142,7 +112,6 @@ func (s *Suite) generateChildrenTesting() string {
 	type suiteData struct {
 		Title string
 		Name  string
-		Tests []string
 	}
 
 	if len(s.Children) == 0 {
@@ -156,9 +125,6 @@ func (s *Suite) generateChildrenTesting() string {
 		suite := &suiteData{
 			Title: title,
 			Name:  child.Name(),
-		}
-		for _, t := range child.Tests {
-			suite.Tests = append(suite.Tests, t.Name)
 		}
 
 		suites = append(suites, suite)
