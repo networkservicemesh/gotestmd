@@ -26,7 +26,7 @@ const emptyTest = `func (s *Suite) Test() {}`
 
 const testTemplate = `
 func (s *Suite) Test{{ .Name }}() {
-	r := s.Runner("{{ .Dir }}")
+	r := s.Runner()
 	{{ .Cleanup }}
 	{{ .Run }}
 }

@@ -19,6 +19,7 @@ package bash
 import (
 	"context"
 	"io"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"strconv"
@@ -65,6 +66,8 @@ func New(options ...Option) (*Bash, error) {
 
 // Close closes current bash process and all the resources used by it
 func (b *Bash) Close() {
+	_ = os.RemoveAll(b.dir)
+
 	b.cancel()
 	_, err := b.stdin.Write([]byte("exit 0\n"))
 	if err != nil {
@@ -74,11 +77,6 @@ func (b *Bash) Close() {
 	for _, r := range b.resources {
 		_ = r.Close()
 	}
-}
-
-// Dir returns the directory where the runner instance is located
-func (b *Bash) Dir() string {
-	return b.dir
 }
 
 // Init initializes all resources for the bash runner.
@@ -97,8 +95,15 @@ func (b *Bash) Init() error {
 	if len(b.env) == 0 {
 		b.env = os.Environ()
 	}
+
+	tempDir, err := ioutil.TempDir("tmp", "")
+	if err != nil {
+		tempDir = ""
+	}
+
+	b.dir = tempDir
 	b.cmd = &exec.Cmd{
-		Dir:  b.dir,
+		Dir:  tempDir,
 		Env:  b.env,
 		Path: p,
 	}

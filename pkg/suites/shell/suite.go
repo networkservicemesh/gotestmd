@@ -20,7 +20,6 @@ package shell
 import (
 	"flag"
 	"os"
-	"path/filepath"
 	"sync"
 	"testing"
 	"time"
@@ -41,14 +40,11 @@ type Suite struct {
 }
 
 // Runner creates runner and sets the passed dir and envs
-func (s *Suite) Runner(dir string, env ...string) *Runner {
+func (s *Suite) Runner(env ...string) *Runner {
 	result := &Runner{
 		t: s.T(),
 	}
-	if !filepath.IsAbs(dir) {
-		dir = filepath.Join(findRoot(), dir)
-	}
-	b, err := bash.New(bash.WithDir(dir), bash.WithEnv(env))
+	b, err := bash.New(bash.WithEnv(env))
 	if err != nil {
 		s.FailNowf("can't initialize bash", "%v", err)
 	}
@@ -70,35 +66,11 @@ func (s *Suite) Runner(dir string, env ...string) *Runner {
 	return result
 }
 
-func findRoot() string {
-	wd, err := os.Getwd()
-	if err != nil {
-		logrus.Fatal(err.Error())
-	}
-	currDir := wd
-	for len(currDir) > 0 {
-		if err != nil {
-			logrus.Fatal(err.Error())
-		}
-		p := filepath.Clean(filepath.Join(currDir, "go.mod"))
-		if _, err := os.Open(p); err == nil {
-			return currDir
-		}
-		currDir = filepath.Dir(currDir)
-	}
-	return ""
-}
-
 // Runner is shell runner.
 type Runner struct {
 	t      *testing.T
 	logger *logrus.Logger
 	bash   *bash.Bash
-}
-
-// Dir returns the directory where current runner instance is located
-func (r *Runner) Dir() string {
-	return r.bash.Dir()
 }
 
 // Run runs cmd, logs stdin, stdout, stderr
