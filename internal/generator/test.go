@@ -32,6 +32,15 @@ func (s *Suite) Test{{ .Name }}() {
 }
 `
 
+const bashTestTemplate = `
+function test{{. Name }}() {
+	cd {{ .Dir }}
+
+	{{ .Run }}
+
+	{{ .Cleanup }}
+}`
+
 // Test is a template for a test for a suite
 type Test struct {
 	Dir     string
@@ -42,7 +51,7 @@ type Test struct {
 
 // String returns string as a test for the suite
 func (t *Test) String() string {
-	source := testTemplate
+	source := bashTestTemplate
 	if len(t.Cleanup)+len(t.Run) == 0 {
 		source = emptyTest
 	}
