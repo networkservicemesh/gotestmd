@@ -66,9 +66,15 @@ func (g *Generator) Generate(examples ...*linker.LinkedExample) []*Suite {
 		var depsToSetup = Dependencies([]Dependency{Dependency(g.conf.BasePkg)})
 		depsToSetup = append(depsToSetup, normalizeDeps(moduleName, e.ParentDependencies())...)
 
+		location := filepath.Join(g.conf.OutputDir, strings.ToLower(e.Name))
+		if g.conf.Bash {
+			location = filepath.Join(location, "suite.sh")
+		} else {
+			location = filepath.Join(location, "suite.gen.go")
+		}
 		s := &Suite{
 			Dir:         e.Dir,
-			Location:    filepath.Join(g.conf.OutputDir, strings.ToLower(e.Name), "suite.gen.go"),
+			Location:    location,
 			Dependency:  Dependency(path.Join(g.conf.OutputDir, strings.ToLower(e.Name))),
 			Cleanup:     e.Cleanup,
 			Run:         e.Run,

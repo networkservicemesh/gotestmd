@@ -21,6 +21,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -51,6 +52,8 @@ func New() *cobra.Command {
 			}
 
 			c := config.FromArgs(args)
+			c.Bash = bash
+			c.Match = match
 			_ = os.MkdirAll(c.OutputDir, os.ModePerm)
 			var examples []*parser.Example
 
@@ -84,39 +87,36 @@ func New() *cobra.Command {
 				return nil
 			}
 
-			suite := suites[0]
-			suite.BashString(suites)
+			matchRegex, err := regexp.Compile(match)
+			if err != nil {
+				return err
+			}
 
-			// matchRegex, err := regexp.Compile(match)
-			// if err != nil {
-			// 	return err
-			// }
+			for _, suite := range suites {
+				if matchRegex.MatchString(suite.Name()) {
+					dir, _ := filepath.Split(suite.Location)
+					_ = os.MkdirAll(dir, os.ModePerm)
+					err := os.WriteFile(suite.Location, []byte(suite.BashString()), os.ModePerm)
+					if err != nil {
+						return errors.Errorf("cannot save suite %v, : %v", suite.Name(), err.Error())
+					}
+					return nil
+				}
+			}
 
-			// for _, suite := range suites {
-			// 	if matchRegex.MatchString(suite.Name()) {
-			// 		dir, _ := filepath.Split(suite.Location)
-			// 		_ = os.MkdirAll(dir, os.ModePerm)
-			// 		err := os.WriteFile(suite.Location, []byte(suite.BashString()), os.ModePerm)
-			// 		if err != nil {
-			// 			return errors.Errorf("cannot save suite %v, : %v", suite.Name(), err.Error())
-			// 		}
-			// 		return nil
-			// 	}
-			// }
-
-			// for _, suite := range suites {
-			// 	for _, test := range suite.Tests {
-			// 		if matchRegex.MatchString(test.Name) {
-			// 			dir, _ := filepath.Split(suite.Location)
-			// 			_ = os.MkdirAll(dir, os.ModePerm)
-			// 			err := os.WriteFile(suite.Location, []byte(suite.BashString()), os.ModePerm)
-			// 			if err != nil {
-			// 				return errors.Errorf("cannot save suite %v, : %v", suite.Name(), err.Error())
-			// 			}
-			// 			return nil
-			// 		}
-			// 	}
-			// }
+			for _, suite := range suites {
+				for _, test := range suite.Tests {
+					if matchRegex.MatchString(test.Name) {
+						dir, _ := filepath.Split(suite.Location)
+						_ = os.MkdirAll(dir, os.ModePerm)
+						err := os.WriteFile(suite.Location, []byte(suite.BashString()), os.ModePerm)
+						if err != nil {
+							return errors.Errorf("cannot save suite %v, : %v", suite.Name(), err.Error())
+						}
+						return nil
+					}
+				}
+			}
 
 			return nil
 		},

@@ -21,6 +21,7 @@ package generator
 import (
 	"fmt"
 	"path"
+	"path/filepath"
 	"strings"
 	"text/template"
 )
@@ -146,7 +147,7 @@ func (s *Suite) generateChildrenTesting() string {
 // String returns a string that contains generated testify.Suite
 func (s *Suite) String() string {
 	tmpl, err := template.New("test").Parse(
-		bashSuiteTemplate,
+		suiteTemplate,
 	)
 
 	if err != nil {
@@ -196,27 +197,59 @@ func (s *Suite) String() string {
 const bashSuiteTemplate = `
 function setup() {
 	{{ .Setup }}
-	cd {{ .Dir }}
-
-	{{ .Run }}
 }
 
 function cleanup() {
 	{{ .Cleanup }}
 }
+setup()
+cleanup()
 `
 
-func (s *Suite) BashString(suites []*Suite) string {
-	setup := s.getCompleteSetup(suites)
-	fmt.Printf("setup: %v\n", setup)
-	return ""
-}
+func (s *Suite) BashString() string {
+	setup := strings.Join(s.getCompleteSetup(), "\n")
+	cleanup := strings.Join(s.getCompleteCleanup(), "\n")
 
-func (s *Suite) getCompleteSetup(suites []*Suite) []string {
-	for _, p := range s.Parents {
-		fmt.Println(p.Run)
-		fmt.Print("\n\n")
+	tmpl, err := template.New("test").Parse(
+		bashSuiteTemplate,
+	)
+
+	if err != nil {
+		panic(err.Error())
 	}
 
-	return nil
+	var result = new(strings.Builder)
+
+	_ = tmpl.Execute(result, struct {
+		Dir     string
+		Cleanup string
+		Setup   string
+	}{
+		Dir:     s.Dir,
+		Cleanup: cleanup,
+		Setup:   setup,
+	})
+
+	return spaceRegex.ReplaceAllString(strings.TrimSpace(result.String()), "\n")
+}
+
+func (s *Suite) getCompleteSetup() []string {
+	setup := make([]string, 0)
+	for _, p := range s.Parents {
+		setup = append(setup, p.getCompleteSetup()...)
+	}
+
+	absDir, _ := filepath.Abs(s.Dir)
+	setup = append(setup, "cd "+absDir)
+	setup = append(setup, s.Run...)
+	return setup
+}
+
+func (s *Suite) getCompleteCleanup() []string {
+	cleanup := s.Cleanup
+	for _, p := range s.Parents {
+		cleanup = append(cleanup, p.getCompleteCleanup()...)
+	}
+
+	return cleanup
 }
