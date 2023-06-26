@@ -1,4 +1,6 @@
-// Copyright (c) 2020-2021 Doc.ai and/or its affiliates.
+// Copyright (c) 2020-2023 Doc.ai and/or its affiliates.
+//
+// Copyright (c) 2023 Cisco and/or its affiliates.
 //
 // SPDX-License-Identifier: Apache-2.0
 //
@@ -96,7 +98,7 @@ func TestBashLongOperation(t *testing.T) {
 	require.NoError(t, err)
 	defer runner.Close()
 
-	stdout, stderr, exitCode, err := runner.Run("sleep 1s; echo hi")
+	stdout, stderr, exitCode, err := runner.Run("sleep 1; echo hi")
 	require.NoError(t, err)
 	require.Zero(t, exitCode)
 	require.Equal(t, "hi", stdout)

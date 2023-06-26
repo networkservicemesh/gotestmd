@@ -1,4 +1,6 @@
-// Copyright (c) 2020-2021 Doc.ai and/or its affiliates.
+// Copyright (c) 2020-2023 Doc.ai and/or its affiliates.
+//
+// Copyright (c) 2023 Cisco and/or its affiliates.
 //
 // SPDX-License-Identifier: Apache-2.0
 //
@@ -18,8 +20,6 @@
 package config
 
 import (
-	"os"
-
 	"github.com/sirupsen/logrus"
 )
 
@@ -31,18 +31,18 @@ type Config struct {
 }
 
 // FromArgs returns Config from the os.Args
-func FromArgs() Config {
-	if len(os.Args) < 3 || len(os.Args) > 4 {
+func FromArgs(args []string) Config {
+	if len(args) < 2 || len(args) > 3 {
 		logrus.Fatal("ARGs have wrong length. Expected: (string)input-dir (string)output-dir (string)base-pkg[optional]")
 	}
 	result := Config{
-		InputDir:  os.Args[1],
-		OutputDir: os.Args[2],
+		InputDir:  args[0],
+		OutputDir: args[1],
 		BasePkg:   "github.com/networkservicemesh/gotestmd/pkg/suites/shell",
 	}
 
-	if len(os.Args) == 4 {
-		result.BasePkg = os.Args[3]
+	if len(args) == 3 {
+		result.BasePkg = args[2]
 	}
 
 	return result
