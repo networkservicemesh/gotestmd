@@ -1,4 +1,4 @@
-// Copyright (c) 2022-2023 Cisco and/or its affiliates.
+// Copyright (c) 2023 Cisco and/or its affiliates.
 //
 // SPDX-License-Identifier: Apache-2.0
 //
@@ -18,20 +18,21 @@
 package gotestmd
 
 import (
-	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
 	"strings"
 
+	"github.com/pkg/errors"
+	"github.com/spf13/cobra"
+
 	"github.com/networkservicemesh/gotestmd/internal/config"
 	"github.com/networkservicemesh/gotestmd/internal/generator"
 	"github.com/networkservicemesh/gotestmd/internal/linker"
 	"github.com/networkservicemesh/gotestmd/internal/parser"
-	"github.com/pkg/errors"
-	"github.com/spf13/cobra"
 )
 
+// New creates new cmd/gotestmd
 func New() *cobra.Command {
 	gotestmdCmd := &cobra.Command{
 		Use:     "gotestmd",
@@ -62,7 +63,7 @@ func New() *cobra.Command {
 			for _, suite := range suites {
 				dir, _ := filepath.Split(suite.Location)
 				_ = os.MkdirAll(dir, os.ModePerm)
-				err := ioutil.WriteFile(suite.Location, []byte(suite.String()), os.ModePerm)
+				err := os.WriteFile(suite.Location, []byte(suite.String()), os.ModePerm)
 				if err != nil {
 					return errors.Errorf("cannot save suite %v, : %v", suite.Name(), err.Error())
 				}
