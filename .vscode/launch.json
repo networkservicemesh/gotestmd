@@ -10,7 +10,7 @@
             "request": "launch",
             "mode": "auto",
             "program": "main.go",
-            "args":["gen", "https://github.com/networkservicemesh/deployments-k8s/blob/main/examples/use-cases/Kernel2Kernel/README.md", "--bash"],
+            "args":["../deployments-k8s/examples", "./suites", "--bash", "--match=Basic"],
         }
     ]
 }

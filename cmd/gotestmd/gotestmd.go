@@ -40,6 +40,16 @@ func New() *cobra.Command {
 		Version: "0.0.1",
 
 		RunE: func(cmd *cobra.Command, args []string) error {
+			match := cmd.Flag("match").Value.String()
+			bash := false
+			if cmd.Flag("bash").Value.String() == "true" {
+				bash = true
+			}
+
+			if bash && match == "" {
+				return errors.New("Flag --bash can be used only with flag --match")
+			}
+
 			c := config.FromArgs(args)
 			_ = os.MkdirAll(c.OutputDir, os.ModePerm)
 			var examples []*parser.Example
@@ -60,18 +70,60 @@ func New() *cobra.Command {
 			}
 
 			suites := g.Generate(linkedExamples...)
-			for _, suite := range suites {
-				dir, _ := filepath.Split(suite.Location)
-				_ = os.MkdirAll(dir, os.ModePerm)
-				err := os.WriteFile(suite.Location, []byte(suite.String()), os.ModePerm)
-				if err != nil {
-					return errors.Errorf("cannot save suite %v, : %v", suite.Name(), err.Error())
+
+			if !bash {
+				for _, suite := range suites {
+					dir, _ := filepath.Split(suite.Location)
+					_ = os.MkdirAll(dir, os.ModePerm)
+					err := os.WriteFile(suite.Location, []byte(suite.String()), os.ModePerm)
+					if err != nil {
+						return errors.Errorf("cannot save suite %v, : %v", suite.Name(), err.Error())
+					}
 				}
+
+				return nil
 			}
+
+			suite := suites[0]
+			suite.BashString(suites)
+
+			// matchRegex, err := regexp.Compile(match)
+			// if err != nil {
+			// 	return err
+			// }
+
+			// for _, suite := range suites {
+			// 	if matchRegex.MatchString(suite.Name()) {
+			// 		dir, _ := filepath.Split(suite.Location)
+			// 		_ = os.MkdirAll(dir, os.ModePerm)
+			// 		err := os.WriteFile(suite.Location, []byte(suite.BashString()), os.ModePerm)
+			// 		if err != nil {
+			// 			return errors.Errorf("cannot save suite %v, : %v", suite.Name(), err.Error())
+			// 		}
+			// 		return nil
+			// 	}
+			// }
+
+			// for _, suite := range suites {
+			// 	for _, test := range suite.Tests {
+			// 		if matchRegex.MatchString(test.Name) {
+			// 			dir, _ := filepath.Split(suite.Location)
+			// 			_ = os.MkdirAll(dir, os.ModePerm)
+			// 			err := os.WriteFile(suite.Location, []byte(suite.BashString()), os.ModePerm)
+			// 			if err != nil {
+			// 				return errors.Errorf("cannot save suite %v, : %v", suite.Name(), err.Error())
+			// 			}
+			// 			return nil
+			// 		}
+			// 	}
+			// }
 
 			return nil
 		},
 	}
+
+	gotestmdCmd.Flags().Bool("bash", false, "generates bash scripts for tests. Can be used only with --match flag")
+	gotestmdCmd.Flags().String("match", "", "regex for matching suite or test name. Can be used only with --bash flag")
 
 	return gotestmdCmd
 }

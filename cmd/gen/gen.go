@@ -75,6 +75,9 @@ func New() *cobra.Command {
 		},
 	}
 
+	c.Flags().Bool("bash", false, "generates bash scripts for tests")
+	c.Flags().String("match", "", "regex for matching suite or test name. Can be used only with --bash flag")
+
 	return c
 }
 

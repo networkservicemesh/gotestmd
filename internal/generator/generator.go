@@ -95,5 +95,11 @@ func (g *Generator) Generate(examples ...*linker.LinkedExample) []*Suite {
 		index[k].Children = append(index[k].Children, v...)
 	}
 
+	for _, e := range examples {
+		for _, require := range e.Requires {
+			index[e.Name].Parents = append(index[e.Name].Parents, index[require])
+		}
+	}
+
 	return result
 }
