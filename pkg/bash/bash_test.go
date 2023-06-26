@@ -96,7 +96,7 @@ func TestBashLongOperation(t *testing.T) {
 	require.NoError(t, err)
 	defer runner.Close()
 
-	stdout, stderr, exitCode, err := runner.Run("sleep 1s; echo hi")
+	stdout, stderr, exitCode, err := runner.Run("sleep 1; echo hi")
 	require.NoError(t, err)
 	require.Zero(t, exitCode)
 	require.Equal(t, "hi", stdout)
