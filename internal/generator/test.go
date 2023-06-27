@@ -32,15 +32,6 @@ func (s *Suite) Test{{ .Name }}() {
 }
 `
 
-const bashTestTemplate = `
-function test{{. Name }}() {
-	cd {{ .Dir }}
-
-	{{ .Run }}
-
-	{{ .Cleanup }}
-}`
-
 // Test is a template for a test for a suite
 type Test struct {
 	Dir     string
@@ -51,7 +42,7 @@ type Test struct {
 
 // String returns string as a test for the suite
 func (t *Test) String() string {
-	source := bashTestTemplate
+	source := testTemplate
 	if len(t.Cleanup)+len(t.Run) == 0 {
 		source = emptyTest
 	}
@@ -83,6 +74,41 @@ func (t *Test) String() string {
 		Dir:     t.Dir,
 		Cleanup: cleanup,
 		Run:     t.Run.String(),
+	})
+
+	return result.String()
+}
+
+const bashTestTemplate = `
+function test{{ .Name }}() {
+	cd {{ .Dir }}
+
+	{{ .Run }}
+
+	{{ .Cleanup }}
+}`
+
+func (t *Test) BashString() string {
+	tmpl, err := template.New("bashtest").Parse(bashTestTemplate)
+	if err != nil {
+		panic(err.Error())
+	}
+
+	run := strings.Join(t.Run, "\n")
+	cleanup := strings.Join(t.Cleanup, "\n")
+
+	result := new(strings.Builder)
+
+	_ = tmpl.Execute(result, struct {
+		Dir     string
+		Name    string
+		Cleanup string
+		Run     string
+	}{
+		Name:    t.Name,
+		Dir:     t.Dir,
+		Cleanup: cleanup,
+		Run:     run,
 	})
 
 	return result.String()

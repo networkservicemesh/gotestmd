@@ -94,6 +94,7 @@ func New() *cobra.Command {
 
 			for _, suite := range suites {
 				if matchRegex.MatchString(suite.Name()) {
+					suite.Tests = nil
 					dir, _ := filepath.Split(suite.Location)
 					_ = os.MkdirAll(dir, os.ModePerm)
 					err := os.WriteFile(suite.Location, []byte(suite.BashString()), os.ModePerm)
@@ -107,6 +108,7 @@ func New() *cobra.Command {
 			for _, suite := range suites {
 				for _, test := range suite.Tests {
 					if matchRegex.MatchString(test.Name) {
+						suite.Tests = []*generator.Test{test}
 						dir, _ := filepath.Split(suite.Location)
 						_ = os.MkdirAll(dir, os.ModePerm)
 						err := os.WriteFile(suite.Location, []byte(suite.BashString()), os.ModePerm)

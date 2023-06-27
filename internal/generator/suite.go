@@ -202,18 +202,13 @@ function setup() {
 function cleanup() {
 	{{ .Cleanup }}
 }
-setup()
-cleanup()
 `
 
 func (s *Suite) BashString() string {
 	setup := strings.Join(s.getCompleteSetup(), "\n")
 	cleanup := strings.Join(s.getCompleteCleanup(), "\n")
 
-	tmpl, err := template.New("test").Parse(
-		bashSuiteTemplate,
-	)
-
+	tmpl, err := template.New("test").Parse(bashSuiteTemplate)
 	if err != nil {
 		panic(err.Error())
 	}
@@ -229,6 +224,15 @@ func (s *Suite) BashString() string {
 		Cleanup: cleanup,
 		Setup:   setup,
 	})
+	for _, test := range s.Tests {
+		result.WriteString(test.BashString())
+	}
+	result.WriteString("\n\n")
+	result.WriteString("setup()\n\n")
+	for _, test := range s.Tests {
+		result.WriteString("test" + test.Name + "()\n\n")
+	}
+	result.WriteString("cleanup()\n\n")
 
 	return spaceRegex.ReplaceAllString(strings.TrimSpace(result.String()), "\n")
 }
