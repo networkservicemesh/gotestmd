@@ -227,12 +227,12 @@ func (s *Suite) BashString() string {
 	for _, test := range s.Tests {
 		result.WriteString(test.BashString())
 	}
-	result.WriteString("\n\n")
-	result.WriteString("setup()\n\n")
+	result.WriteString("\n")
+	result.WriteString("setup\n")
 	for _, test := range s.Tests {
-		result.WriteString("test" + test.Name + "()\n\n")
+		result.WriteString("test" + test.Name + "\n")
 	}
-	result.WriteString("cleanup()\n\n")
+	result.WriteString("cleanup\n")
 
 	return spaceRegex.ReplaceAllString(strings.TrimSpace(result.String()), "\n")
 }

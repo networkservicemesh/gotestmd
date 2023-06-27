@@ -68,3 +68,24 @@ EOF
 	require.NoError(t, err)
 	require.Zero(t, exitCode)
 }
+
+func TestBashExamples(t *testing.T) {
+	t.Cleanup(func() {
+		_ = os.RemoveAll("test-bash-examples")
+	})
+	runner, err := bash.New()
+	require.NoError(t, err)
+	defer runner.Close()
+	_, _, exitCode, err := runner.Run("go install ./...")
+	require.NoError(t, err)
+	require.Zero(t, exitCode)
+
+	_, _, exitCode, err = runner.Run("gotestmd examples/ test-bash-examples/ --bash --match=LeafA")
+	require.NoError(t, err)
+	require.Zero(t, exitCode)
+
+	_, _, exitCode, err = runner.Run("./test-bash-examples/tree/suite.sh")
+	require.NoError(t, err)
+	require.Zero(t, exitCode)
+
+}
