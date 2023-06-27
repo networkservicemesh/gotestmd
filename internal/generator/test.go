@@ -1,4 +1,6 @@
-// Copyright (c) 2020-2021 Doc.ai and/or its affiliates.
+// Copyright (c) 2020-2023 Doc.ai and/or its affiliates.
+//
+// Copyright (c) 2023 Cisco and/or its affiliates.
 //
 // SPDX-License-Identifier: Apache-2.0
 //
@@ -88,6 +90,7 @@ function test{{ .Name }}() {
 	{{ .Cleanup }}
 }`
 
+// BashString generates bash script for the test
 func (t *Test) BashString() string {
 	tmpl, err := template.New("bashtest").Parse(bashTestTemplate)
 	if err != nil {

@@ -75,16 +75,7 @@ func New() *cobra.Command {
 			suites := g.Generate(linkedExamples...)
 
 			if !bash {
-				for _, suite := range suites {
-					dir, _ := filepath.Split(suite.Location)
-					_ = os.MkdirAll(dir, os.ModePerm)
-					err := os.WriteFile(suite.Location, []byte(suite.String()), os.ModePerm)
-					if err != nil {
-						return errors.Errorf("cannot save suite %v, : %v", suite.Name(), err.Error())
-					}
-				}
-
-				return nil
+				return processGoSuites(suites)
 			}
 
 			matchRegex, err := regexp.Compile(match)
@@ -92,35 +83,7 @@ func New() *cobra.Command {
 				return err
 			}
 
-			for _, suite := range suites {
-				if matchRegex.MatchString(suite.Name()) {
-					suite.Tests = nil
-					dir, _ := filepath.Split(suite.Location)
-					_ = os.MkdirAll(dir, os.ModePerm)
-					err := os.WriteFile(suite.Location, []byte(suite.BashString()), os.ModePerm)
-					if err != nil {
-						return errors.Errorf("cannot save suite %v, : %v", suite.Name(), err.Error())
-					}
-					return nil
-				}
-			}
-
-			for _, suite := range suites {
-				for _, test := range suite.Tests {
-					if matchRegex.MatchString(test.Name) {
-						suite.Tests = []*generator.Test{test}
-						dir, _ := filepath.Split(suite.Location)
-						_ = os.MkdirAll(dir, os.ModePerm)
-						err := os.WriteFile(suite.Location, []byte(suite.BashString()), os.ModePerm)
-						if err != nil {
-							return errors.Errorf("cannot save suite %v, : %v", suite.Name(), err.Error())
-						}
-						return nil
-					}
-				}
-			}
-
-			return nil
+			return processBashSuites(suites, matchRegex)
 		},
 	}
 
@@ -128,6 +91,53 @@ func New() *cobra.Command {
 	gotestmdCmd.Flags().String("match", "", "regex for matching suite or test name. Can be used only with --bash flag")
 
 	return gotestmdCmd
+}
+
+func processGoSuites(suites []*generator.Suite) error {
+	for _, suite := range suites {
+		dir, _ := filepath.Split(suite.Location)
+		_ = os.MkdirAll(dir, os.ModePerm)
+		err := os.WriteFile(suite.Location, []byte(suite.String()), os.ModePerm)
+		if err != nil {
+			return errors.Errorf("cannot save suite %v, : %v", suite.Name(), err.Error())
+		}
+	}
+
+	return nil
+}
+
+func processBashSuites(suites []*generator.Suite, matchRegex *regexp.Regexp) error {
+	for _, suite := range suites {
+		if !matchRegex.MatchString(suite.Name()) {
+			continue
+		}
+		suite.Tests = nil
+		dir, _ := filepath.Split(suite.Location)
+		_ = os.MkdirAll(dir, os.ModePerm)
+		err := os.WriteFile(suite.Location, []byte(suite.BashString()), os.ModePerm)
+		if err != nil {
+			return errors.Errorf("cannot save suite %v, : %v", suite.Name(), err.Error())
+		}
+		return nil
+	}
+
+	for _, suite := range suites {
+		for _, test := range suite.Tests {
+			if !matchRegex.MatchString(test.Name) {
+				continue
+			}
+			suite.Tests = []*generator.Test{test}
+			dir, _ := filepath.Split(suite.Location)
+			_ = os.MkdirAll(dir, os.ModePerm)
+			err := os.WriteFile(suite.Location, []byte(suite.BashString()), os.ModePerm)
+			if err != nil {
+				return errors.Errorf("cannot save suite %v, : %v", suite.Name(), err.Error())
+			}
+			return nil
+		}
+	}
+
+	return nil
 }
 
 func getFilter(root string) func(string) bool {
