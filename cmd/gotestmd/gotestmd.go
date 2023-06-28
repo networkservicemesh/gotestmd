@@ -43,8 +43,8 @@ func New() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			match := cmd.Flag("match").Value.String()
 			bash := false
-			if cmd.Flag("bash").Value.String() == "true" {
-				bash = true
+			if value, err := cmd.Flags().GetBool("bash"); err == nil {
+				bash = value
 			}
 
 			if bash && match == "" {
