@@ -225,7 +225,6 @@ setup_dependencies() {
 {{ .SetupDependencies }}}
 
 setup_main() {
-	cd {{ .Dir }}
 {{ .SetupMain }}}
 
 setup() {
@@ -255,6 +254,10 @@ func (s *Suite) BashString() string {
 	}
 
 	absDir, _ := filepath.Abs(s.Dir)
+	s.Run = append([]string{"cd " + absDir}, s.Run...)
+	s.Run = append([]string{fmt.Sprintf("echo 'setup suite %s'", filepath.Dir(s.Location))}, s.Run...)
+	s.Cleanup = append([]string{fmt.Sprintf("echo 'cleanup suite %s'", filepath.Dir(s.Location))}, s.Cleanup...)
+
 	tmpl, err := template.New("test").Parse(bashSuiteTemplate)
 	if err != nil {
 		panic(err.Error())
@@ -281,7 +284,6 @@ func (s *Suite) BashString() string {
 	result.WriteString("\n\n")
 	result.WriteString("\"$1\"\n")
 
-	// return spaceRegex.ReplaceAllString(strings.TrimSpace(result.String()), "\n")
 	return result.String()
 }
 
@@ -292,13 +294,15 @@ func (s *Suite) getDependenciesSetup() []string {
 	}
 
 	absDir, _ := filepath.Abs(s.Dir)
+	setup = append(setup, fmt.Sprintf("echo 'setup suite %s'", filepath.Dir(s.Location)))
 	setup = append(setup, "cd "+absDir)
 	setup = append(setup, s.Run...)
 	return setup
 }
 
 func (s *Suite) getDependenciesCleanup() []string {
-	cleanup := s.Cleanup
+	cleanup := []string{fmt.Sprintf("echo 'cleanup suite %s'", filepath.Dir(s.Location))}
+	cleanup = append(cleanup, s.Cleanup...)
 	for _, p := range s.Parents {
 		cleanup = append(cleanup, p.getDependenciesSetup()...)
 	}
