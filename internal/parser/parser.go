@@ -19,7 +19,6 @@ package parser
 
 import (
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -57,7 +56,7 @@ func (p *Parser) ParseFile(filePath string) (*Example, error) {
 
 // Parse reads io.Reader
 func (p *Parser) Parse(r io.Reader) (*Example, error) {
-	bytes, err := ioutil.ReadAll(r)
+	bytes, err := io.ReadAll(r)
 	if err != nil {
 		return nil, err
 	}

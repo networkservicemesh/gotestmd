@@ -19,7 +19,6 @@
 package bash_test
 
 import (
-	"io/ioutil"
 	"math/rand"
 	"os"
 	"testing"
@@ -85,7 +84,7 @@ EOF`)
 	require.Empty(t, stdout)
 	require.Empty(t, stderr)
 
-	content, err := ioutil.ReadFile("test")
+	content, err := os.ReadFile("test")
 	require.NoError(t, err)
 	require.Equal(t, envValue+"\n", string(content))
 	_ = os.Remove("test")
