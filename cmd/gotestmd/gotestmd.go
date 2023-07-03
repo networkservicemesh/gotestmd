@@ -107,10 +107,13 @@ func processGoSuites(suites []*generator.Suite) error {
 }
 
 func processBashSuites(suites []*generator.Suite, matchRegex *regexp.Regexp) error {
+	matchFound := false
+
 	for _, suite := range suites {
 		if !matchRegex.MatchString(suite.Name()) {
 			continue
 		}
+		matchFound = true
 		suite.Tests = nil
 		dir, _ := filepath.Split(suite.Location)
 		_ = os.MkdirAll(dir, os.ModePerm)
@@ -118,23 +121,31 @@ func processBashSuites(suites []*generator.Suite, matchRegex *regexp.Regexp) err
 		if err != nil {
 			return errors.Errorf("cannot save suite %v, : %v", suite.Name(), err.Error())
 		}
-		return nil
 	}
 
 	for _, suite := range suites {
+		matchedTests := make([]*generator.Test, 0)
 		for _, test := range suite.Tests {
-			if !matchRegex.MatchString(test.Name) {
-				continue
+			if matchRegex.MatchString(test.Name) {
+				matchedTests = append(matchedTests, test)
+				matchFound = true
 			}
-			suite.Tests = []*generator.Test{test}
-			dir, _ := filepath.Split(suite.Location)
-			_ = os.MkdirAll(dir, os.ModePerm)
-			err := os.WriteFile(suite.Location, []byte(suite.BashString()), os.ModePerm)
-			if err != nil {
-				return errors.Errorf("cannot save suite %v, : %v", suite.Name(), err.Error())
-			}
-			return nil
 		}
+		if len(matchedTests) == 0 {
+			continue
+		}
+
+		suite.Tests = matchedTests
+		dir, _ := filepath.Split(suite.Location)
+		_ = os.MkdirAll(dir, os.ModePerm)
+		err := os.WriteFile(suite.Location, []byte(suite.BashString()), os.ModePerm)
+		if err != nil {
+			return errors.Errorf("cannot save suite %v, : %v", suite.Name(), err.Error())
+		}
+	}
+
+	if !matchFound {
+		return errors.Errorf("No matches found for pattern: %s", matchRegex.String())
 	}
 
 	return nil

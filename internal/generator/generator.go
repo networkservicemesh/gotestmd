@@ -70,7 +70,7 @@ func (g *Generator) Generate(examples ...*linker.LinkedExample) []*Suite {
 
 		location := filepath.Join(g.conf.OutputDir, strings.ToLower(e.Name))
 		if g.conf.Bash {
-			location = filepath.Join(location, "suite.sh")
+			location = filepath.Join(location, "suite.gen.sh")
 		} else {
 			location = filepath.Join(location, "suite.gen.go")
 		}

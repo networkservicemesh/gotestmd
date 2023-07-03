@@ -95,7 +95,7 @@ func (b Body) BashString(withExit bool) string {
 	var sb strings.Builder
 
 	if len(b) == 0 {
-		return ""
+		return "\t:\n"
 	}
 
 	for _, block := range b {
@@ -255,7 +255,6 @@ func (s *Suite) BashString() string {
 	}
 
 	absDir, _ := filepath.Abs(s.Dir)
-
 	tmpl, err := template.New("test").Parse(bashSuiteTemplate)
 	if err != nil {
 		panic(err.Error())
