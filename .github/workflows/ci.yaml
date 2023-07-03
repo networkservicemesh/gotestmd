@@ -10,9 +10,32 @@ jobs:
     uses: networkservicemesh/.github/.github/workflows/shellcheck.yaml@main
 
   build-and-test:
-    uses: networkservicemesh/.github/.github/workflows/build-and-test.yaml@main
-    with:
-      os: '["ubuntu-latest", "macos-latest"]'
+    name: build-and-test
+    runs-on: ${{ matrix.os }}
+    needs: checkgomod
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - name: Setup Go
+        uses: actions/setup-go@v1
+        with:
+          go-version: 1.20.5
+      - name: Setup envs
+        run: |
+          echo GOPATH=$GITHUB_WORKSPACE >> $GITHUB_ENV
+          echo GO111MODULE=on >> $GITHUB_ENV
+          echo $GITHUB_WORKSPACE/bin >> $GITHUB_PATH
+      - name: Check out code
+        uses: actions/checkout@v2
+        with:
+          path: ${{ github.workspace }}/src/github.com/${{ github.repository }}
+      - name: Build
+        run: go build -race ./...
+        working-directory: ${{ github.workspace }}/src/github.com/${{ github.repository }}
+      - name: Test
+        run: go test -race ./...
+        working-directory: ${{ github.workspace }}/src/github.com/${{ github.repository }}
  
   golangci-lint:
     uses: networkservicemesh/.github/.github/workflows/golangci-lint.yaml@main
