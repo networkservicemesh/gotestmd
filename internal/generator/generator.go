@@ -1,4 +1,6 @@
-// Copyright (c) 2020-2021 Doc.ai and/or its affiliates.
+// Copyright (c) 2020-2023 Doc.ai and/or its affiliates.
+//
+// Copyright (c) 2023 Cisco and/or its affiliates.
 //
 // SPDX-License-Identifier: Apache-2.0
 //
@@ -66,9 +68,15 @@ func (g *Generator) Generate(examples ...*linker.LinkedExample) []*Suite {
 		var depsToSetup = Dependencies([]Dependency{Dependency(g.conf.BasePkg)})
 		depsToSetup = append(depsToSetup, normalizeDeps(moduleName, e.ParentDependencies())...)
 
+		location := filepath.Join(g.conf.OutputDir, strings.ToLower(e.Name))
+		if g.conf.Bash {
+			location = filepath.Join(location, "suite.gen.sh")
+		} else {
+			location = filepath.Join(location, "suite.gen.go")
+		}
 		s := &Suite{
 			Dir:         e.Dir,
-			Location:    filepath.Join(g.conf.OutputDir, strings.ToLower(e.Name), "suite.gen.go"),
+			Location:    location,
 			Dependency:  Dependency(path.Join(g.conf.OutputDir, strings.ToLower(e.Name))),
 			Cleanup:     e.Cleanup,
 			Run:         e.Run,
@@ -93,6 +101,12 @@ func (g *Generator) Generate(examples ...*linker.LinkedExample) []*Suite {
 	// Apply subsuites to the suites
 	for k, v := range children {
 		index[k].Children = append(index[k].Children, v...)
+	}
+
+	for _, e := range examples {
+		for _, require := range e.Requires {
+			index[e.Name].Parents = append(index[e.Name].Parents, index[require])
+		}
 	}
 
 	return result

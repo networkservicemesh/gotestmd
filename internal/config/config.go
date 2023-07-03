@@ -28,6 +28,8 @@ type Config struct {
 	InputDir  string
 	OutputDir string
 	BasePkg   string
+	Bash      bool
+	Match     string
 }
 
 // FromArgs returns Config from the os.Args

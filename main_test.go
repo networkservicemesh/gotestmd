@@ -1,4 +1,6 @@
-// Copyright (c) 2020-2021 Doc.ai and/or its affiliates.
+// Copyright (c) 2020-2023 Doc.ai and/or its affiliates.
+//
+// Copyright (c) 2023 Cisco and/or its affiliates.
 //
 // SPDX-License-Identifier: Apache-2.0
 //
@@ -67,4 +69,73 @@ EOF
 	_, _, exitCode, err = runner.Run("go test ./test-examples/... ")
 	require.NoError(t, err)
 	require.Zero(t, exitCode)
+}
+
+func TestBashSuite(t *testing.T) {
+	t.Cleanup(func() {
+		_ = os.RemoveAll("test-bash-examples")
+	})
+	runner, err := bash.New()
+	require.NoError(t, err)
+	defer runner.Close()
+	_, _, exitCode, err := runner.Run("go install ./...")
+	require.NoError(t, err)
+	require.Zero(t, exitCode)
+
+	_, _, exitCode, err = runner.Run("gotestmd examples/ test-bash-examples/ --bash --match=tree")
+	require.NoError(t, err)
+	require.Zero(t, exitCode)
+
+	_, _, exitCode, err = runner.Run("./test-bash-examples/tree/suite.gen.sh setup")
+	require.NoError(t, err)
+	require.Zero(t, exitCode)
+
+	_, _, exitCode, err = runner.Run("./test-bash-examples/tree/suite.gen.sh cleanup")
+	require.NoError(t, err)
+	require.Zero(t, exitCode)
+}
+
+func TestBashTest(t *testing.T) {
+	t.Cleanup(func() {
+		_ = os.RemoveAll("test-bash-examples")
+	})
+	runner, err := bash.New()
+	require.NoError(t, err)
+	defer runner.Close()
+	_, _, exitCode, err := runner.Run("go install ./...")
+	require.NoError(t, err)
+	require.Zero(t, exitCode)
+
+	_, _, exitCode, err = runner.Run("gotestmd examples/ test-bash-examples/ --bash --match=LeafA")
+	require.NoError(t, err)
+	require.Zero(t, exitCode)
+
+	_, _, exitCode, err = runner.Run("./test-bash-examples/tree/suite.gen.sh setup")
+	require.NoError(t, err)
+	require.Zero(t, exitCode)
+
+	_, _, exitCode, err = runner.Run("./test-bash-examples/tree/suite.gen.sh testLeafA")
+	require.NoError(t, err)
+	require.Zero(t, exitCode)
+
+	_, _, exitCode, err = runner.Run("./test-bash-examples/tree/suite.gen.sh cleanup")
+	require.NoError(t, err)
+	require.Zero(t, exitCode)
+}
+
+func TestBashNoMatchesFound(t *testing.T) {
+	t.Cleanup(func() {
+		_ = os.RemoveAll("test-bash-examples")
+	})
+	runner, err := bash.New()
+	require.NoError(t, err)
+	defer runner.Close()
+	_, _, exitCode, err := runner.Run("go install ./...")
+	require.NoError(t, err)
+	require.Zero(t, exitCode)
+
+	_, stderr, exitCode, err := runner.Run("gotestmd examples/ test-bash-examples/ --bash --match=UnmatchablePattern")
+	require.Contains(t, stderr, "No matches found for pattern: UnmatchablePattern")
+	require.NoError(t, err)
+	require.NotZero(t, exitCode)
 }

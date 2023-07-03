@@ -1,4 +1,6 @@
-// Copyright (c) 2020-2021 Doc.ai and/or its affiliates.
+// Copyright (c) 2020-2023 Doc.ai and/or its affiliates.
+//
+// Copyright (c) 2023 Cisco and/or its affiliates.
 //
 // SPDX-License-Identifier: Apache-2.0
 //
@@ -18,6 +20,7 @@ package generator
 
 import (
 	"fmt"
+	"path/filepath"
 	"strings"
 	"text/template"
 )
@@ -74,6 +77,37 @@ func (t *Test) String() string {
 		Dir:     t.Dir,
 		Cleanup: cleanup,
 		Run:     t.Run.String(),
+	})
+
+	return result.String()
+}
+
+const bashTestTemplate = `
+test{{ .Name }}() {
+{{ .Run }}
+{{ .Cleanup }}}`
+
+// BashString generates a bash script for the test
+func (t *Test) BashString() string {
+	tmpl, err := template.New("bashtest").Parse(bashTestTemplate)
+	if err != nil {
+		panic(err.Error())
+	}
+	absDir, _ := filepath.Abs(t.Dir)
+
+	t.Run = append(t.Run, "cd "+absDir)
+	result := new(strings.Builder)
+
+	_ = tmpl.Execute(result, struct {
+		Dir     string
+		Name    string
+		Run     string
+		Cleanup string
+	}{
+		Name:    t.Name,
+		Dir:     absDir,
+		Run:     t.Run.BashString(true),
+		Cleanup: t.Cleanup.BashString(false),
 	})
 
 	return result.String()

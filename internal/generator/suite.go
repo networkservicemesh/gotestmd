@@ -1,6 +1,6 @@
-// Copyright (c) 2020-2022 Doc.ai and/or its affiliates.
+// Copyright (c) 2020-2023 Doc.ai and/or its affiliates.
 //
-// Copyright (c) 2022 Cisco and/or its affiliates.
+// Copyright (c) 2022-2023 Cisco and/or its affiliates.
 //
 // SPDX-License-Identifier: Apache-2.0
 //
@@ -21,6 +21,7 @@ package generator
 import (
 	"fmt"
 	"path"
+	"path/filepath"
 	"strings"
 	"text/template"
 )
@@ -90,6 +91,31 @@ func (b Body) String() string {
 	return sb.String()
 }
 
+// BashString returns the body as a bash script for the suite
+func (b Body) BashString(withExit bool) string {
+	var sb strings.Builder
+
+	if len(b) == 0 {
+		return "\t:\n"
+	}
+
+	for _, block := range b {
+		var lines = strings.Split(block, "\n")
+		sb.WriteString("\t")
+		sb.WriteString(lines[0])
+		for i := 1; i < len(lines); i++ {
+			sb.WriteString(" &&\n\t")
+			sb.WriteString(lines[i])
+		}
+		if withExit {
+			sb.WriteString(" || exit")
+		}
+		sb.WriteString("\n")
+	}
+
+	return sb.String()
+}
+
 // Suite represents a template for generating a testify suite.Suite
 type Suite struct {
 	Dir      string
@@ -99,6 +125,7 @@ type Suite struct {
 	Run         Body
 	Tests       []*Test
 	Children    []*Suite
+	Parents     []*Suite
 	Deps        Dependencies
 	DepsToSetup Dependencies
 }
@@ -190,4 +217,95 @@ func (s *Suite) String() string {
 	}
 
 	return spaceRegex.ReplaceAllString(strings.TrimSpace(result.String()), "\n")
+}
+
+const bashSuiteTemplate = `
+#! /bin/bash
+
+setup_dependencies() {
+{{ .SetupDependencies }}}
+
+setup_main() {
+{{ .SetupMain }}}
+
+setup() {
+	setup_dependencies && setup_main
+}
+
+cleanup_dependencies() {
+{{ .CleanupDependencies }}}
+
+cleanup_main() {
+{{ .CleanupMain }}}
+
+cleanup() {
+	cleanup_main && cleanup_dependencies
+}
+`
+
+// BashString generates bash script for the suite
+func (s *Suite) BashString() string {
+	var setupDependencies Body
+	for _, p := range s.Parents {
+		setupDependencies = append(setupDependencies, p.getDependenciesSetup()...)
+	}
+	var cleanupDependencies Body
+	for _, p := range s.Parents {
+		cleanupDependencies = append(cleanupDependencies, p.getDependenciesCleanup()...)
+	}
+
+	absDir, _ := filepath.Abs(s.Dir)
+	s.Run = append([]string{"cd " + absDir}, s.Run...)
+	s.Run = append([]string{fmt.Sprintf("echo 'setup suite %s'", filepath.Dir(s.Location))}, s.Run...)
+	s.Cleanup = append([]string{fmt.Sprintf("echo 'cleanup suite %s'", filepath.Dir(s.Location))}, s.Cleanup...)
+
+	tmpl, err := template.New("test").Parse(bashSuiteTemplate)
+	if err != nil {
+		panic(err.Error())
+	}
+
+	var result = new(strings.Builder)
+
+	_ = tmpl.Execute(result, struct {
+		Dir                 string
+		SetupDependencies   string
+		SetupMain           string
+		CleanupDependencies string
+		CleanupMain         string
+	}{
+		Dir:                 absDir,
+		SetupDependencies:   setupDependencies.BashString(true),
+		SetupMain:           s.Run.BashString(true),
+		CleanupDependencies: cleanupDependencies.BashString(false),
+		CleanupMain:         s.Cleanup.BashString(false),
+	})
+	for _, test := range s.Tests {
+		result.WriteString(test.BashString())
+	}
+	result.WriteString("\n\n")
+	result.WriteString("\"$1\"\n")
+
+	return result.String()
+}
+
+func (s *Suite) getDependenciesSetup() []string {
+	setup := make([]string, 0)
+	for _, p := range s.Parents {
+		setup = append(setup, p.getDependenciesSetup()...)
+	}
+
+	absDir, _ := filepath.Abs(s.Dir)
+	setup = append(setup, fmt.Sprintf("echo 'setup suite %s'", filepath.Dir(s.Location)), "cd "+absDir)
+	setup = append(setup, s.Run...)
+	return setup
+}
+
+func (s *Suite) getDependenciesCleanup() []string {
+	cleanup := []string{fmt.Sprintf("echo 'cleanup suite %s'", filepath.Dir(s.Location))}
+	cleanup = append(cleanup, s.Cleanup...)
+	for _, p := range s.Parents {
+		cleanup = append(cleanup, p.getDependenciesSetup()...)
+	}
+
+	return cleanup
 }
