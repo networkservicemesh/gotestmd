@@ -84,20 +84,18 @@ func (t *Test) String() string {
 
 const bashTestTemplate = `
 test{{ .Name }}() {
-	cd {{ .Dir }}
 {{ .Run }}
 {{ .Cleanup }}}`
 
-// BashString generates bash script for the test
+// BashString generates a bash script for the test
 func (t *Test) BashString() string {
 	tmpl, err := template.New("bashtest").Parse(bashTestTemplate)
 	if err != nil {
 		panic(err.Error())
 	}
 	absDir, _ := filepath.Abs(t.Dir)
-	run := Body(t.Run)
-	cleanup := Body(t.Cleanup)
 
+	t.Run = append(t.Run, "cd "+absDir)
 	result := new(strings.Builder)
 
 	_ = tmpl.Execute(result, struct {
@@ -108,8 +106,8 @@ func (t *Test) BashString() string {
 	}{
 		Name:    t.Name,
 		Dir:     absDir,
-		Run:     run.BashString(true),
-		Cleanup: cleanup.BashString(false),
+		Run:     t.Run.BashString(true),
+		Cleanup: t.Cleanup.BashString(false),
 	})
 
 	return result.String()

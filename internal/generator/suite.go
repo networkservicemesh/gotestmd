@@ -91,6 +91,7 @@ func (b Body) String() string {
 	return sb.String()
 }
 
+// BashString returns the body as a bash script for the suite
 func (b Body) BashString(withExit bool) string {
 	var sb strings.Builder
 
@@ -274,9 +275,9 @@ func (s *Suite) BashString() string {
 	}{
 		Dir:                 absDir,
 		SetupDependencies:   setupDependencies.BashString(true),
-		SetupMain:           Body(s.Run).BashString(true),
+		SetupMain:           s.Run.BashString(true),
 		CleanupDependencies: cleanupDependencies.BashString(false),
-		CleanupMain:         Body(s.Cleanup).BashString(false),
+		CleanupMain:         s.Cleanup.BashString(false),
 	})
 	for _, test := range s.Tests {
 		result.WriteString(test.BashString())
@@ -294,8 +295,7 @@ func (s *Suite) getDependenciesSetup() []string {
 	}
 
 	absDir, _ := filepath.Abs(s.Dir)
-	setup = append(setup, fmt.Sprintf("echo 'setup suite %s'", filepath.Dir(s.Location)))
-	setup = append(setup, "cd "+absDir)
+	setup = append(setup, fmt.Sprintf("echo 'setup suite %s'", filepath.Dir(s.Location)), "cd "+absDir)
 	setup = append(setup, s.Run...)
 	return setup
 }
