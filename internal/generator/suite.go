@@ -91,6 +91,30 @@ func (b Body) String() string {
 	return sb.String()
 }
 
+func (b Body) BashString(withExit bool) string {
+	var sb strings.Builder
+
+	if len(b) == 0 {
+		return ""
+	}
+
+	for _, block := range b {
+		var lines = strings.Split(block, "\n")
+		sb.WriteString("\t")
+		sb.WriteString(lines[0])
+		for i := 1; i < len(lines); i++ {
+			sb.WriteString(" &&\n\t")
+			sb.WriteString(lines[i])
+		}
+		if withExit {
+			sb.WriteString(" || exit")
+		}
+		sb.WriteString("\n")
+	}
+
+	return sb.String()
+}
+
 // Suite represents a template for generating a testify suite.Suite
 type Suite struct {
 	Dir      string
@@ -195,19 +219,42 @@ func (s *Suite) String() string {
 }
 
 const bashSuiteTemplate = `
-function setup() {
-	{{ .Setup }}
+#! /bin/bash
+
+setup_dependencies() {
+{{ .SetupDependencies }}}
+
+setup_main() {
+	cd {{ .Dir }}
+{{ .SetupMain }}}
+
+setup() {
+	setup_dependencies && setup_main
 }
 
-function cleanup() {
-	{{ .Cleanup }}
+cleanup_dependencies() {
+{{ .CleanupDependencies }}}
+
+cleanup_main() {
+{{ .CleanupMain }}}
+
+cleanup() {
+	cleanup_main && cleanup_dependencies
 }
 `
 
 // BashString generates bash script for the suite
 func (s *Suite) BashString() string {
-	setup := strings.Join(s.getCompleteSetup(), "\n")
-	cleanup := strings.Join(s.getCompleteCleanup(), "\n")
+	var setupDependencies Body
+	for _, p := range s.Parents {
+		setupDependencies = append(setupDependencies, p.getDependenciesSetup()...)
+	}
+	var cleanupDependencies Body
+	for _, p := range s.Parents {
+		cleanupDependencies = append(cleanupDependencies, p.getDependenciesCleanup()...)
+	}
+
+	absDir, _ := filepath.Abs(s.Dir)
 
 	tmpl, err := template.New("test").Parse(bashSuiteTemplate)
 	if err != nil {
@@ -217,31 +264,32 @@ func (s *Suite) BashString() string {
 	var result = new(strings.Builder)
 
 	_ = tmpl.Execute(result, struct {
-		Dir     string
-		Cleanup string
-		Setup   string
+		Dir                 string
+		SetupDependencies   string
+		SetupMain           string
+		CleanupDependencies string
+		CleanupMain         string
 	}{
-		Dir:     s.Dir,
-		Cleanup: cleanup,
-		Setup:   setup,
+		Dir:                 absDir,
+		SetupDependencies:   setupDependencies.BashString(true),
+		SetupMain:           Body(s.Run).BashString(true),
+		CleanupDependencies: cleanupDependencies.BashString(false),
+		CleanupMain:         Body(s.Cleanup).BashString(false),
 	})
 	for _, test := range s.Tests {
 		result.WriteString(test.BashString())
 	}
-	result.WriteString("\n")
-	result.WriteString("setup\n")
-	for _, test := range s.Tests {
-		result.WriteString("test" + test.Name + "\n")
-	}
-	result.WriteString("cleanup\n")
+	result.WriteString("\n\n")
+	result.WriteString("\"$1\"\n")
 
-	return spaceRegex.ReplaceAllString(strings.TrimSpace(result.String()), "\n")
+	// return spaceRegex.ReplaceAllString(strings.TrimSpace(result.String()), "\n")
+	return result.String()
 }
 
-func (s *Suite) getCompleteSetup() []string {
+func (s *Suite) getDependenciesSetup() []string {
 	setup := make([]string, 0)
 	for _, p := range s.Parents {
-		setup = append(setup, p.getCompleteSetup()...)
+		setup = append(setup, p.getDependenciesSetup()...)
 	}
 
 	absDir, _ := filepath.Abs(s.Dir)
@@ -250,10 +298,10 @@ func (s *Suite) getCompleteSetup() []string {
 	return setup
 }
 
-func (s *Suite) getCompleteCleanup() []string {
+func (s *Suite) getDependenciesCleanup() []string {
 	cleanup := s.Cleanup
 	for _, p := range s.Parents {
-		cleanup = append(cleanup, p.getCompleteCleanup()...)
+		cleanup = append(cleanup, p.getDependenciesSetup()...)
 	}
 
 	return cleanup

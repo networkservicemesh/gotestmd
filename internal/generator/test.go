@@ -20,6 +20,7 @@ package generator
 
 import (
 	"fmt"
+	"path/filepath"
 	"strings"
 	"text/template"
 )
@@ -82,13 +83,10 @@ func (t *Test) String() string {
 }
 
 const bashTestTemplate = `
-function test{{ .Name }}() {
+test{{ .Name }}() {
 	cd {{ .Dir }}
-
-	{{ .Run }}
-
-	{{ .Cleanup }}
-}`
+{{ .Run }}
+{{ .Cleanup }}}`
 
 // BashString generates bash script for the test
 func (t *Test) BashString() string {
@@ -96,22 +94,22 @@ func (t *Test) BashString() string {
 	if err != nil {
 		panic(err.Error())
 	}
-
-	run := strings.Join(t.Run, "\n")
-	cleanup := strings.Join(t.Cleanup, "\n")
+	absDir, _ := filepath.Abs(t.Dir)
+	run := Body(t.Run)
+	cleanup := Body(t.Cleanup)
 
 	result := new(strings.Builder)
 
 	_ = tmpl.Execute(result, struct {
 		Dir     string
 		Name    string
-		Cleanup string
 		Run     string
+		Cleanup string
 	}{
 		Name:    t.Name,
-		Dir:     t.Dir,
-		Cleanup: cleanup,
-		Run:     run,
+		Dir:     absDir,
+		Run:     run.BashString(true),
+		Cleanup: cleanup.BashString(false),
 	})
 
 	return result.String()
