@@ -1,5 +1,7 @@
 // Copyright (c) 2021 Doc.ai and/or its affiliates.
 //
+// Copyright (c) 2023 Cisco and/or its affiliates.
+//
 // SPDX-License-Identifier: Apache-2.0
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -40,7 +42,7 @@ func TestShellFirstTry(t *testing.T) {
 	fileName := "TestShellFirstTry.file"
 
 	r.Run("echo " + fileContent + " >" + fileName)
-	bytes, err := os.ReadFile(filepath.Join(tempDir, fileName))
+	bytes, err := os.ReadFile(filepath.Clean(filepath.Join(tempDir, fileName)))
 	require.NoError(t, err)
 	require.Equal(t, fileContent+"\n", string(bytes))
 }
@@ -63,7 +65,7 @@ func TestShellEventually(t *testing.T) {
 	echo >&2 not enough ones
 	false
 fi`)
-	bytes, err := os.ReadFile(filepath.Join(tempDir, fileName))
+	bytes, err := os.ReadFile(filepath.Clean(filepath.Join(tempDir, fileName)))
 	require.NoError(t, err)
 	require.Equal(t, "1\n11\n111\n", string(bytes))
 }

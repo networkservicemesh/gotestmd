@@ -1,5 +1,7 @@
 // Copyright (c) 2020-2021 Doc.ai and/or its affiliates.
 //
+// Copyright (c) 2023 Cisco and/or its affiliates.
+//
 // SPDX-License-Identifier: Apache-2.0
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -83,7 +85,7 @@ func (b *Bash) Dir() string {
 
 // Init initializes all resources for the bash runner.
 //
-// Must be called before any call to Run or Close
+// # Must be called before any call to Run or Close
 //
 // You are advised to use bash.New instead, which calls this function automatically.
 func (b *Bash) Init() error {
@@ -166,27 +168,24 @@ func (b *Bash) extractMessagesFromPipe(pipe io.Reader, ch chan string) {
 // Run runs the command
 func (b *Bash) Run(cmd string) (stdout, stderr string, exitCode int, err error) {
 	if b.ctx.Err() != nil {
-		err = b.ctx.Err()
-		return
+		return "", "", 0, b.ctx.Err()
 	}
 
 	_, err = b.stdin.Write([]byte(cmd + "\n" + cmdPrintStatusCode + "\n" + cmdPrintStdoutFinish + "\n" + cmdPrintStderrFinish + "\n"))
 	if err != nil {
-		return
+		return "", "", 0, err
 	}
 
 	select {
 	case stdout = <-b.stdoutCh:
 	case <-b.ctx.Done():
-		err = b.ctx.Err()
-		return
+		return "", "", 0, nil
 	}
 
 	select {
 	case stderr = <-b.stderrCh:
 	case <-b.ctx.Done():
-		err = b.ctx.Err()
-		return
+		return "", "", 0, nil
 	}
 
 	lastLineBreak := strings.LastIndex(stdout, "\n")
@@ -201,7 +200,7 @@ func (b *Bash) Run(cmd string) (stdout, stderr string, exitCode int, err error) 
 	var exitCode64 int64
 	exitCode64, err = strconv.ParseInt(exitCodeString, 0, 9)
 	if err != nil {
-		return
+		return "", "", 0, err
 	}
 	exitCode = int(exitCode64)
 

@@ -1,5 +1,7 @@
 // Copyright (c) 2020-2021 Doc.ai and/or its affiliates.
 //
+// Copyright (c) 2023 Cisco and/or its affiliates.
+//
 // SPDX-License-Identifier: Apache-2.0
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,7 +19,6 @@
 package generator
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -55,7 +56,7 @@ func moduleName(start string) string {
 	for len(currDir) > 0 {
 		p := filepath.Clean(filepath.Join(currDir, "go.mod"))
 		if _, err = os.Open(p); err == nil {
-			source, err := ioutil.ReadFile(p)
+			source, err := os.ReadFile(p)
 			if err != nil {
 				logrus.Fatal(err.Error())
 			}

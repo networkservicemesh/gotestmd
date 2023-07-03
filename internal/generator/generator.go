@@ -2,6 +2,8 @@
 //
 // Copyright (c) 2023 Cisco and/or its affiliates.
 //
+// Copyright (c) 2023 Cisco and/or its affiliates.
+//
 // SPDX-License-Identifier: Apache-2.0
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -22,6 +24,9 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
+
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 
 	"github.com/networkservicemesh/gotestmd/internal/config"
 	"github.com/networkservicemesh/gotestmd/internal/linker"
@@ -52,7 +57,7 @@ func (g *Generator) Generate(examples ...*linker.LinkedExample) []*Suite {
 			for _, parent := range e.Parents {
 				tests[parent.Name] = append(tests[parent.Name], &Test{
 					Dir:     e.Dir,
-					Name:    strings.Title(nameRegex.ReplaceAllString(name, "_")),
+					Name:    cases.Title(language.AmericanEnglish).String(nameRegex.ReplaceAllString(name, "_")),
 					Cleanup: e.Cleanup,
 					Run:     e.Run,
 				})
