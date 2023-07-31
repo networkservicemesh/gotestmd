@@ -103,17 +103,12 @@ func (b Body) BashString(withExit bool) string {
 	}
 
 	for _, block := range b {
-		var lines = strings.Split(block, "\n")
 		sb.WriteString("\t")
-		sb.WriteString(lines[0])
-		for i := 1; i < len(lines); i++ {
-			sb.WriteString(" &&\n\t")
-			sb.WriteString(lines[i])
-		}
-		if withExit {
-			sb.WriteString(" || exit")
-		}
+		sb.WriteString(block)
 		sb.WriteString("\n")
+		if withExit {
+			sb.WriteString("\t[ $? = 0 ] || exit\n")
+		}
 	}
 
 	return sb.String()
