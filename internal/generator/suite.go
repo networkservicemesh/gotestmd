@@ -231,13 +231,18 @@ setup() {
 }
 
 cleanup_dependencies() {
-{{ .CleanupDependencies }}}
+{{ .CleanupDependencies }}	# cleanup shouldn't report errors
+	true
+}
 
 cleanup_main() {
-{{ .CleanupMain }}}
+{{ .CleanupMain }}	# cleanup shouldn't report errors
+	true
+}
 
 cleanup() {
-	cleanup_main && cleanup_dependencies
+	cleanup_main
+	cleanup_dependencies
 }
 `
 
