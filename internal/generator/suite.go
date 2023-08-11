@@ -104,11 +104,14 @@ func (b Body) BashString(withExit bool) string {
 
 	for _, block := range b {
 		sb.WriteString("\t")
-		sb.WriteString(block)
-		sb.WriteString("\n")
 		if withExit {
-			sb.WriteString("\t[ $? = 0 ] || exit\n")
+			sb.WriteString("try_run '")
+			sb.WriteString(strings.Replace(block, "'", "'\\''", -1))
+			sb.WriteString("' || exit")
+		} else {
+			sb.WriteString(block)
 		}
+		sb.WriteString("\n")
 	}
 
 	return sb.String()
@@ -218,7 +221,32 @@ func (s *Suite) String() string {
 }
 
 const bashSuiteTemplate = `
-#! /bin/bash
+#!/usr/bin/env bash
+
+function try_run() {
+    command="$1"
+    attempt=0
+    retry_interval=1
+    timeout="${RETRY_TIMEOUT_SECONDS:-300}"
+    start_time="$(date -u +%s)"
+    echo "===== next command ====="
+    echo "$command"
+    while true; do
+        attempt=$((attempt + 1))
+        echo "===== attempt $attempt ====="
+        echo "current time $(date +"%Y-%m-%dT%H:%M:%S%z")"
+        source <(echo "${command}")
+        retval=$?
+		echo
+        echo "retval = $retval"
+        current_time="$(date -u +%s)"
+        elapsed=$((current_time-start_time))
+        echo "elapsed = $elapsed"
+        [ $retval = 0 ] && echo "===== command success =====" && return 0
+        [ "$elapsed" -gt "$timeout" ] && echo "===== command timed out =====" && return 1
+        sleep $retry_interval
+    done
+}
 
 setup_dependencies() {
 {{ .SetupDependencies }}}
