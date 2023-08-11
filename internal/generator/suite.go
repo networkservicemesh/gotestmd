@@ -106,7 +106,7 @@ func (b Body) BashString(withExit bool) string {
 		sb.WriteString("\t")
 		if withExit {
 			sb.WriteString("try_run '")
-			sb.WriteString(strings.Replace(block, "'", "'\\''", -1))
+			sb.WriteString(strings.ReplaceAll(block, "'", "'\\''"))
 			sb.WriteString("' || exit")
 		} else {
 			sb.WriteString(block)
