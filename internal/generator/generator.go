@@ -57,7 +57,7 @@ func (g *Generator) Generate(examples ...*linker.LinkedExample) []*Suite {
 			for _, parent := range e.Parents {
 				tests[parent.Name] = append(tests[parent.Name], &Test{
 					Dir:     e.Dir,
-					Name:    cases.Title(language.AmericanEnglish).String(nameRegex.ReplaceAllString(name, "_")),
+					Name:    cases.Title(language.Und, cases.NoLower).String(nameRegex.ReplaceAllString(name, "_")),
 					Cleanup: e.Cleanup,
 					Run:     e.Run,
 				})

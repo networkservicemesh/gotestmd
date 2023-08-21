@@ -149,7 +149,7 @@ func (s *Suite) generateChildrenTesting() string {
 	var suites []*suiteData
 	for _, child := range s.Children {
 		_, title := path.Split(child.Dir)
-		title = cases.Title(language.AmericanEnglish).String(nameRegex.ReplaceAllString(title, "_"))
+		title = cases.Title(language.Und, cases.NoLower).String(nameRegex.ReplaceAllString(title, "_"))
 		suite := &suiteData{
 			Title: title,
 			Name:  child.Name(),
