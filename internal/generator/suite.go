@@ -95,7 +95,7 @@ func (b Body) String() string {
 }
 
 // BashString returns the body as a bash script for the suite
-func (b Body) BashString(withExit bool) string {
+func (b Body) BashString(withExit, retry bool) string {
 	var sb strings.Builder
 
 	if len(b) == 0 {
@@ -104,12 +104,15 @@ func (b Body) BashString(withExit bool) string {
 
 	for _, block := range b {
 		sb.WriteString("\t")
-		if withExit {
+		if retry {
 			sb.WriteString("try_run '")
 			sb.WriteString(strings.ReplaceAll(block, "'", "'\\''"))
-			sb.WriteString("' || exit")
+			sb.WriteString("'")
 		} else {
 			sb.WriteString(block)
+		}
+		if withExit {
+			sb.WriteString(" || exit")
 		}
 		sb.WriteString("\n")
 	}
@@ -222,32 +225,7 @@ func (s *Suite) String() string {
 
 const bashSuiteTemplate = `
 #!/usr/bin/env bash
-
-function try_run() {
-    command="$1"
-    attempt=0
-    retry_interval=1
-    timeout="${RETRY_TIMEOUT_SECONDS:-300}"
-    start_time="$(date -u +%s)"
-    echo "===== next command ====="
-    echo "$command"
-    while true; do
-        attempt=$((attempt + 1))
-        echo "===== attempt $attempt ====="
-        echo "current time $(date +"%Y-%m-%dT%H:%M:%S%z")"
-        source <(echo "${command}")
-        retval=$?
-		echo
-        echo "retval = $retval"
-        current_time="$(date -u +%s)"
-        elapsed=$((current_time-start_time))
-        echo "elapsed = $elapsed"
-        [ $retval = 0 ] && echo "===== command success =====" && return 0
-        [ "$elapsed" -gt "$timeout" ] && echo "===== command timed out =====" && return 1
-        sleep $retry_interval
-    done
-}
-
+{{ .RetryFunction }}
 setup_dependencies() {
 {{ .SetupDependencies }}}
 
@@ -274,8 +252,35 @@ cleanup() {
 }
 `
 
+const retryTemplate = `
+function try_run() {
+    command="$1"
+    attempt=0
+    retry_interval=1
+    timeout="${RETRY_TIMEOUT_SECONDS:-300}"
+    start_time="$(date -u +%s)"
+    echo "===== next command ====="
+    echo "$command"
+    while true; do
+        attempt=$((attempt + 1))
+        echo "===== attempt $attempt ====="
+        echo "current time $(date +"%Y-%m-%dT%H:%M:%S%z")"
+        source <(echo "${command}")
+        retval=$?
+		echo
+        echo "retval = $retval"
+        current_time="$(date -u +%s)"
+        elapsed=$((current_time-start_time))
+        echo "elapsed = $elapsed"
+        [ $retval = 0 ] && echo "===== command success =====" && return 0
+        [ "$elapsed" -gt "$timeout" ] && echo "===== command timed out =====" && return 1
+        sleep $retry_interval
+    done
+}
+`
+
 // BashString generates bash script for the suite
-func (s *Suite) BashString() string {
+func (s *Suite) BashString(retry bool) string {
 	var setupDependencies Body
 	for _, p := range s.Parents {
 		setupDependencies = append(setupDependencies, p.getDependenciesSetup()...)
@@ -297,21 +302,27 @@ func (s *Suite) BashString() string {
 
 	var result = new(strings.Builder)
 
+	retryFunction := ""
+	if retry {
+		retryFunction = retryTemplate
+	}
 	_ = tmpl.Execute(result, struct {
 		Dir                 string
 		SetupDependencies   string
 		SetupMain           string
 		CleanupDependencies string
 		CleanupMain         string
+		RetryFunction       string
 	}{
 		Dir:                 absDir,
-		SetupDependencies:   setupDependencies.BashString(true),
-		SetupMain:           s.Run.BashString(true),
-		CleanupDependencies: cleanupDependencies.BashString(false),
-		CleanupMain:         s.Cleanup.BashString(false),
+		SetupDependencies:   setupDependencies.BashString(true, retry),
+		SetupMain:           s.Run.BashString(true, retry),
+		CleanupDependencies: cleanupDependencies.BashString(false, false),
+		CleanupMain:         s.Cleanup.BashString(false, false),
+		RetryFunction:       retryFunction,
 	})
 	for _, test := range s.Tests {
-		result.WriteString(test.BashString())
+		result.WriteString(test.BashString(retry))
 	}
 	result.WriteString("\n\n")
 	result.WriteString("\"$1\"\n")

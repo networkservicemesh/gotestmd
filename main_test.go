@@ -123,6 +123,45 @@ func TestBashTest(t *testing.T) {
 	require.Zero(t, exitCode)
 }
 
+func TestBashRetry(t *testing.T) {
+	t.Cleanup(func() {
+		_ = os.RemoveAll("test-bash-examples")
+	})
+	runner, err := bash.New()
+	require.NoError(t, err)
+	defer runner.Close()
+	_, _, exitCode, err := runner.Run("go install ./...")
+	require.NoError(t, err)
+	require.Zero(t, exitCode)
+
+	// chech that retry package fails without retry
+	_, _, exitCode, err = runner.Run("gotestmd examples/ test-bash-examples/ --bash --match=retry")
+	require.NoError(t, err)
+	require.Zero(t, exitCode)
+
+	_, _, exitCode, err = runner.Run("./test-bash-examples/retry/suite.gen.sh setup")
+	require.NoError(t, err)
+	require.NotZero(t, exitCode)
+
+	_, _, exitCode, err = runner.Run("./test-bash-examples/retry/suite.gen.sh cleanup")
+	require.NoError(t, err)
+	require.Zero(t, exitCode)
+
+	// retry package should succees when retry is enabled
+	_, _, exitCode, err = runner.Run("gotestmd examples/ test-bash-examples/ --bash --match=retry --retry")
+	require.NoError(t, err)
+	require.Zero(t, exitCode)
+
+	stdout, _, exitCode, err := runner.Run("./test-bash-examples/retry/suite.gen.sh setup")
+	require.NoError(t, err)
+	require.Zero(t, exitCode)
+	require.Contains(t, stdout, "attempt 2")
+
+	_, _, exitCode, err = runner.Run("./test-bash-examples/retry/suite.gen.sh cleanup")
+	require.NoError(t, err)
+	require.Zero(t, exitCode)
+}
+
 func TestBashNoMatchesFound(t *testing.T) {
 	t.Cleanup(func() {
 		_ = os.RemoveAll("test-bash-examples")

@@ -46,6 +46,10 @@ func New() *cobra.Command {
 			if value, err := cmd.Flags().GetBool("bash"); err == nil {
 				bash = value
 			}
+			retry := false
+			if value, err := cmd.Flags().GetBool("retry"); err == nil {
+				retry = value
+			}
 
 			if bash && match == "" {
 				return errors.New("Flag --bash can be used only with flag --match")
@@ -83,12 +87,13 @@ func New() *cobra.Command {
 				return err
 			}
 
-			return processBashSuites(suites, matchRegex)
+			return processBashSuites(suites, matchRegex, retry)
 		},
 	}
 
 	gotestmdCmd.Flags().Bool("bash", false, "generates bash scripts for tests. Can be used only with --match flag")
 	gotestmdCmd.Flags().String("match", "", "regex for matching suite or test name. Can be used only with --bash flag")
+	gotestmdCmd.Flags().Bool("retry", false, "add retry to commands in generated bash scripts. Does not affect golang tests")
 
 	return gotestmdCmd
 }
@@ -106,7 +111,7 @@ func processGoSuites(suites []*generator.Suite) error {
 	return nil
 }
 
-func processBashSuites(suites []*generator.Suite, matchRegex *regexp.Regexp) error {
+func processBashSuites(suites []*generator.Suite, matchRegex *regexp.Regexp, retry bool) error {
 	matchFound := false
 
 	for _, suite := range suites {
@@ -117,7 +122,7 @@ func processBashSuites(suites []*generator.Suite, matchRegex *regexp.Regexp) err
 		suite.Tests = nil
 		dir, _ := filepath.Split(suite.Location)
 		_ = os.MkdirAll(dir, os.ModePerm)
-		err := os.WriteFile(suite.Location, []byte(suite.BashString()), os.ModePerm)
+		err := os.WriteFile(suite.Location, []byte(suite.BashString(retry)), os.ModePerm)
 		if err != nil {
 			return errors.Errorf("cannot save suite %v, : %v", suite.Name(), err.Error())
 		}
@@ -138,7 +143,7 @@ func processBashSuites(suites []*generator.Suite, matchRegex *regexp.Regexp) err
 		suite.Tests = matchedTests
 		dir, _ := filepath.Split(suite.Location)
 		_ = os.MkdirAll(dir, os.ModePerm)
-		err := os.WriteFile(suite.Location, []byte(suite.BashString()), os.ModePerm)
+		err := os.WriteFile(suite.Location, []byte(suite.BashString(retry)), os.ModePerm)
 		if err != nil {
 			return errors.Errorf("cannot save suite %v, : %v", suite.Name(), err.Error())
 		}
