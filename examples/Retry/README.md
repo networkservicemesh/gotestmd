@@ -20,6 +20,12 @@ false
 )
 ```
 
+```bash
+cat << EOF
+We also need to make sure that retry does not affect commands which use "<<EOF"
+EOF
+```
+
 ## Cleanup
 
 ```bash
