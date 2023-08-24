@@ -28,6 +28,11 @@ MY_TEST_DIR=resources
 echo "mkdir ${MY_TEST_DIR}"
 ```
 
+```bash
+cat << EOF
+We also need to make sure that commands which use "<<EOF" are working without issues.
+EOF
+```
 
 ## Cleanup
 
