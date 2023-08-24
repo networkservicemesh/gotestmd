@@ -265,7 +265,7 @@ function try_run() {
         attempt=$((attempt + 1))
         echo "===== attempt $attempt ====="
         echo "current time $(date +"%Y-%m-%dT%H:%M:%S%z")"
-        source <(echo "${command}")
+        source /dev/stdin <<<"$(echo "${command}")"
         retval=$?
 		echo
         echo "retval = $retval"
