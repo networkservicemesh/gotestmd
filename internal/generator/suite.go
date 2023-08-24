@@ -111,10 +111,10 @@ func (b Body) BashString(withExit, retry bool) string {
 		} else {
 			sb.WriteString(block)
 		}
-		if withExit {
-			sb.WriteString(" || exit")
-		}
 		sb.WriteString("\n")
+		if withExit {
+			sb.WriteString("\t[ $? = 0 ] || exit 1\n")
+		}
 	}
 
 	return sb.String()
