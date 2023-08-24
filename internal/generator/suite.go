@@ -293,6 +293,7 @@ func (s *Suite) BashString(retry bool) string {
 	absDir, _ := filepath.Abs(s.Dir)
 	s.Run = append([]string{"cd " + absDir}, s.Run...)
 	s.Run = append([]string{fmt.Sprintf("echo 'setup suite %s'", filepath.Dir(s.Location))}, s.Run...)
+	s.Cleanup = append([]string{"cd " + absDir}, s.Cleanup...)
 	s.Cleanup = append([]string{fmt.Sprintf("echo 'cleanup suite %s'", filepath.Dir(s.Location))}, s.Cleanup...)
 
 	tmpl, err := template.New("test").Parse(bashSuiteTemplate)
@@ -343,7 +344,8 @@ func (s *Suite) getDependenciesSetup() []string {
 }
 
 func (s *Suite) getDependenciesCleanup() []string {
-	cleanup := []string{fmt.Sprintf("echo 'cleanup suite %s'", filepath.Dir(s.Location))}
+	absDir, _ := filepath.Abs(s.Dir)
+	cleanup := []string{fmt.Sprintf("echo 'cleanup suite %s'", filepath.Dir(s.Location)), "cd " + absDir}
 	cleanup = append(cleanup, s.Cleanup...)
 	for _, p := range s.Parents {
 		cleanup = append(cleanup, p.getDependenciesSetup()...)
