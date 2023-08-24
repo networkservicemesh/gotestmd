@@ -147,7 +147,7 @@ func TestBashRetry(t *testing.T) {
 	require.NoError(t, err)
 	require.Zero(t, exitCode)
 
-	// retry package should succees when retry is enabled
+	// retry package should succeed when retry is enabled
 	_, _, exitCode, err = runner.Run("gotestmd examples/ test-bash-examples/ --bash --match=retry --retry")
 	require.NoError(t, err)
 	require.Zero(t, exitCode)
