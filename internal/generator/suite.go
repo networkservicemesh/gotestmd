@@ -95,7 +95,7 @@ func (b Body) String() string {
 }
 
 // BashString returns the body as a bash script for the suite
-func (b Body) BashString(withExit bool) string {
+func (b Body) BashString(withExit, retry bool) string {
 	var sb strings.Builder
 
 	if len(b) == 0 {
@@ -103,17 +103,18 @@ func (b Body) BashString(withExit bool) string {
 	}
 
 	for _, block := range b {
-		var lines = strings.Split(block, "\n")
 		sb.WriteString("\t")
-		sb.WriteString(lines[0])
-		for i := 1; i < len(lines); i++ {
-			sb.WriteString(" &&\n\t")
-			sb.WriteString(lines[i])
-		}
-		if withExit {
-			sb.WriteString(" || exit")
+		if retry {
+			sb.WriteString("try_run '")
+			sb.WriteString(strings.ReplaceAll(block, "'", "'\\''"))
+			sb.WriteString("'")
+		} else {
+			sb.WriteString(block)
 		}
 		sb.WriteString("\n")
+		if withExit {
+			sb.WriteString("\t[ $? = 0 ] || exit 1\n")
+		}
 	}
 
 	return sb.String()
@@ -151,7 +152,7 @@ func (s *Suite) generateChildrenTesting() string {
 	var suites []*suiteData
 	for _, child := range s.Children {
 		_, title := path.Split(child.Dir)
-		title = cases.Title(language.AmericanEnglish).String(nameRegex.ReplaceAllString(title, "_"))
+		title = cases.Title(language.Und, cases.NoLower).String(nameRegex.ReplaceAllString(title, "_"))
 		suite := &suiteData{
 			Title: title,
 			Name:  child.Name(),
@@ -223,8 +224,8 @@ func (s *Suite) String() string {
 }
 
 const bashSuiteTemplate = `
-#! /bin/bash
-
+#!/usr/bin/env bash
+{{ .RetryFunction }}
 setup_dependencies() {
 {{ .SetupDependencies }}}
 
@@ -236,18 +237,50 @@ setup() {
 }
 
 cleanup_dependencies() {
-{{ .CleanupDependencies }}}
+{{ .CleanupDependencies }}	# cleanup shouldn't report errors
+	true
+}
 
 cleanup_main() {
-{{ .CleanupMain }}}
+{{ .CleanupMain }}	# cleanup shouldn't report errors
+	true
+}
 
 cleanup() {
-	cleanup_main && cleanup_dependencies
+	cleanup_main
+	cleanup_dependencies
+}
+`
+
+const retryTemplate = `
+function try_run() {
+    command="$1"
+    attempt=0
+    retry_interval=1
+    timeout="${RETRY_TIMEOUT_SECONDS:-300}"
+    start_time="$(date -u +%s)"
+    echo "===== next command ====="
+    echo "$command"
+    while true; do
+        attempt=$((attempt + 1))
+        echo "===== attempt $attempt ====="
+        echo "current time $(date +"%Y-%m-%dT%H:%M:%S%z")"
+        source /dev/stdin <<<"$(echo "${command}")"
+        retval=$?
+		echo
+        echo "retval = $retval"
+        current_time="$(date -u +%s)"
+        elapsed=$((current_time-start_time))
+        echo "elapsed = $elapsed"
+        [ $retval = 0 ] && echo "===== command success =====" && return 0
+        [ "$elapsed" -gt "$timeout" ] && echo "===== command timed out =====" && return 1
+        sleep $retry_interval
+    done
 }
 `
 
 // BashString generates bash script for the suite
-func (s *Suite) BashString() string {
+func (s *Suite) BashString(retry bool) string {
 	var setupDependencies Body
 	for _, p := range s.Parents {
 		setupDependencies = append(setupDependencies, p.getDependenciesSetup()...)
@@ -260,6 +293,7 @@ func (s *Suite) BashString() string {
 	absDir, _ := filepath.Abs(s.Dir)
 	s.Run = append([]string{"cd " + absDir}, s.Run...)
 	s.Run = append([]string{fmt.Sprintf("echo 'setup suite %s'", filepath.Dir(s.Location))}, s.Run...)
+	s.Cleanup = append([]string{"cd " + absDir}, s.Cleanup...)
 	s.Cleanup = append([]string{fmt.Sprintf("echo 'cleanup suite %s'", filepath.Dir(s.Location))}, s.Cleanup...)
 
 	tmpl, err := template.New("test").Parse(bashSuiteTemplate)
@@ -269,21 +303,27 @@ func (s *Suite) BashString() string {
 
 	var result = new(strings.Builder)
 
+	retryFunction := ""
+	if retry {
+		retryFunction = retryTemplate
+	}
 	_ = tmpl.Execute(result, struct {
 		Dir                 string
 		SetupDependencies   string
 		SetupMain           string
 		CleanupDependencies string
 		CleanupMain         string
+		RetryFunction       string
 	}{
 		Dir:                 absDir,
-		SetupDependencies:   setupDependencies.BashString(true),
-		SetupMain:           s.Run.BashString(true),
-		CleanupDependencies: cleanupDependencies.BashString(false),
-		CleanupMain:         s.Cleanup.BashString(false),
+		SetupDependencies:   setupDependencies.BashString(true, retry),
+		SetupMain:           s.Run.BashString(true, retry),
+		CleanupDependencies: cleanupDependencies.BashString(false, false),
+		CleanupMain:         s.Cleanup.BashString(false, false),
+		RetryFunction:       retryFunction,
 	})
 	for _, test := range s.Tests {
-		result.WriteString(test.BashString())
+		result.WriteString(test.BashString(retry))
 	}
 	result.WriteString("\n\n")
 	result.WriteString("\"$1\"\n")
@@ -304,7 +344,8 @@ func (s *Suite) getDependenciesSetup() []string {
 }
 
 func (s *Suite) getDependenciesCleanup() []string {
-	cleanup := []string{fmt.Sprintf("echo 'cleanup suite %s'", filepath.Dir(s.Location))}
+	absDir, _ := filepath.Abs(s.Dir)
+	cleanup := []string{fmt.Sprintf("echo 'cleanup suite %s'", filepath.Dir(s.Location)), "cd " + absDir}
 	cleanup = append(cleanup, s.Cleanup...)
 	for _, p := range s.Parents {
 		cleanup = append(cleanup, p.getDependenciesSetup()...)

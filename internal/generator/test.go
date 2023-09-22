@@ -88,7 +88,7 @@ test{{ .Name }}() {
 {{ .Cleanup }}}`
 
 // BashString generates a bash script for the test
-func (t *Test) BashString() string {
+func (t *Test) BashString(retry bool) string {
 	tmpl, err := template.New("bashtest").Parse(bashTestTemplate)
 	if err != nil {
 		panic(err.Error())
@@ -106,8 +106,8 @@ func (t *Test) BashString() string {
 	}{
 		Name:    t.Name,
 		Dir:     absDir,
-		Run:     t.Run.BashString(true),
-		Cleanup: t.Cleanup.BashString(false),
+		Run:     t.Run.BashString(true, retry),
+		Cleanup: t.Cleanup.BashString(false, false),
 	})
 
 	return result.String()
