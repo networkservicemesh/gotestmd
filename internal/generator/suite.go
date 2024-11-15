@@ -1,6 +1,6 @@
 // Copyright (c) 2020-2023 Doc.ai and/or its affiliates.
 //
-// Copyright (c) 2022-2023 Cisco and/or its affiliates.
+// Copyright (c) 2022-2024 Cisco and/or its affiliates.
 //
 // SPDX-License-Identifier: Apache-2.0
 //
@@ -184,7 +184,7 @@ func (s *Suite) String() string {
 	}
 
 	cleanup := s.Cleanup.String()
-	if len(cleanup) > 0 {
+	if cleanup != "" {
 		cleanup = fmt.Sprintf(`	s.T().Cleanup(func() {
 		%v
 	})`, cleanup)

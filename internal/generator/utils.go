@@ -1,6 +1,6 @@
 // Copyright (c) 2020-2021 Doc.ai and/or its affiliates.
 //
-// Copyright (c) 2023 Cisco and/or its affiliates.
+// Copyright (c) 2023-2024 Cisco and/or its affiliates.
 //
 // SPDX-License-Identifier: Apache-2.0
 //
@@ -48,12 +48,11 @@ func normalizeDeps(module string, deps []string) Dependencies {
 }
 
 func moduleName(start string) string {
-	const gomod = "go.mod"
 	currDir, err := filepath.Abs(start)
 	if err != nil {
 		logrus.Fatal(err.Error())
 	}
-	for len(currDir) > 0 {
+	for currDir != "" {
 		p := filepath.Clean(filepath.Join(currDir, "go.mod"))
 		if _, err = os.Open(p); err == nil {
 			source, err := os.ReadFile(p)
